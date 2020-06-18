@@ -1,13 +1,12 @@
-package in.r.mtba.service;
+package in.rsh.mtba.service;
 
-import static in.r.mtba.model.ShowSeat.ShowSeatStatus.AVAILABLE;
-
-import in.r.mtba.model.Screen;
-import in.r.mtba.model.Show;
-import in.r.mtba.model.ShowSeat;
-import in.r.mtba.model.Theatre;
-import in.r.mtba.store.GenericStore;
-import in.r.mtba.store.StoreFactory;
+import in.rsh.mtba.model.Screen;
+import in.rsh.mtba.model.Show;
+import in.rsh.mtba.model.ShowSeat;
+import in.rsh.mtba.model.Theatre;
+import in.rsh.mtba.store.GenericStore;
+import in.rsh.mtba.store.StoreFactory;
+import in.rsh.mtba.model.ShowSeat.ShowSeatStatus;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class OnBoardService {
@@ -51,7 +50,7 @@ public class OnBoardService {
       for (String seat : row) {
         if (!seat.equals("-1") && !seat.equals("0") && !seat.equals("-2")) {
           showSeatsStore.put(
-              seat, ShowSeat.builder().seatId(seat).showId(showId).status(AVAILABLE).build());
+              seat, ShowSeat.builder().seatId(seat).showId(showId).status(ShowSeatStatus.AVAILABLE).build());
         }
       }
     }

@@ -1,8 +1,8 @@
-package in.r.mtba.store;
+package in.rsh.mtba.store;
 
 import static org.junit.Assert.assertEquals;
 
-import in.r.mtba.model.Theatre;
+import in.rsh.mtba.model.Theatre;
 import org.junit.Test;
 
 public class StoreFactoryTest {

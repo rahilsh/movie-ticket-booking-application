@@ -1,12 +1,12 @@
-package in.r.mtba.service;
+package in.rsh.mtba.service;
 
-import in.r.mtba.model.Booking;
-import in.r.mtba.model.Payment;
-import in.r.mtba.model.Payment.PaymentStatus;
-import in.r.mtba.model.ShowSeat;
-import in.r.mtba.model.ShowSeat.ShowSeatStatus;
-import in.r.mtba.store.GenericStore;
-import in.r.mtba.store.StoreFactory;
+import in.rsh.mtba.model.Booking;
+import in.rsh.mtba.model.Payment;
+import in.rsh.mtba.model.Payment.PaymentStatus;
+import in.rsh.mtba.model.ShowSeat;
+import in.rsh.mtba.model.ShowSeat.ShowSeatStatus;
+import in.rsh.mtba.store.GenericStore;
+import in.rsh.mtba.store.StoreFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;

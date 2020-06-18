@@ -1,12 +1,12 @@
-package in.r.mtba.store;
+package in.rsh.mtba.store;
 
-import in.r.mtba.model.Booking;
-import in.r.mtba.model.Payment;
-import in.r.mtba.model.Screen;
-import in.r.mtba.model.Show;
-import in.r.mtba.model.ShowSeat;
-import in.r.mtba.model.Theatre;
-import in.r.mtba.model.User;
+import in.rsh.mtba.model.Booking;
+import in.rsh.mtba.model.Payment;
+import in.rsh.mtba.model.Screen;
+import in.rsh.mtba.model.Show;
+import in.rsh.mtba.model.ShowSeat;
+import in.rsh.mtba.model.Theatre;
+import in.rsh.mtba.model.User;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;

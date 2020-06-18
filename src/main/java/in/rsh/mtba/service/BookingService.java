@@ -1,11 +1,11 @@
-package in.r.mtba.service;
+package in.rsh.mtba.service;
 
-import in.r.mtba.model.Booking;
-import in.r.mtba.model.Booking.BookingStatus;
-import in.r.mtba.model.ShowSeat;
-import in.r.mtba.model.ShowSeat.ShowSeatStatus;
-import in.r.mtba.store.GenericStore;
-import in.r.mtba.store.StoreFactory;
+import in.rsh.mtba.model.Booking;
+import in.rsh.mtba.model.Booking.BookingStatus;
+import in.rsh.mtba.model.ShowSeat;
+import in.rsh.mtba.model.ShowSeat.ShowSeatStatus;
+import in.rsh.mtba.store.GenericStore;
+import in.rsh.mtba.store.StoreFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -13,7 +13,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class BookingService {
   private final GenericStore<Booking> bookingStore =
       StoreFactory.getInstance().getStore(Booking.class);
-  // TODO: use ShowSeatService instead of ShowSeatStore
   private final GenericStore<ShowSeat> showSeatStore =
       StoreFactory.getInstance().getStore(ShowSeat.class);
 
