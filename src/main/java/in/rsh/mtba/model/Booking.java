@@ -1,4 +1,4 @@
-package in.r.mtba.model;
+package in.rsh.mtba.model;
 
 import java.util.List;
 import lombok.Builder;

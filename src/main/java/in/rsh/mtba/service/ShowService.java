@@ -1,9 +1,9 @@
-package in.r.mtba.service;
+package in.rsh.mtba.service;
 
-import in.r.mtba.model.Show;
-import in.r.mtba.model.ShowSeat;
-import in.r.mtba.store.GenericStore;
-import in.r.mtba.store.StoreFactory;
+import in.rsh.mtba.model.Show;
+import in.rsh.mtba.model.ShowSeat;
+import in.rsh.mtba.store.GenericStore;
+import in.rsh.mtba.store.StoreFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
