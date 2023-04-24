@@ -1,10 +1,6 @@
 package in.rsh.mtba;
 
-import in.rsh.mtba.model.Booking;
-import in.rsh.mtba.model.Payment;
-import in.rsh.mtba.model.Screen;
-import in.rsh.mtba.model.Show;
-import in.rsh.mtba.model.Theatre;
+import in.rsh.mtba.model.*;
 import in.rsh.mtba.service.BookingService;
 import in.rsh.mtba.service.OnBoardService;
 import in.rsh.mtba.service.PaymentService;
@@ -13,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,13 +32,19 @@ public class AppTest {
     dummyShow = addDummyShow(dummyScreen);
   }
 
+  @After
+  public void tearDown() {
+    cancelAllBookings();
+  }
+
   private Theatre addDummyTheatre() {
-    return onBoardService.addTheatre(Theatre.builder().name("test").address("Bangalore").build());
+    return onBoardService.addTheatre(Theatre.builder().theatreId(1).name("test").address("Bangalore").build());
   }
 
   private Show addDummyShow(Screen dummyScreen) {
     return onBoardService.addShow(
         Show.builder()
+                .showId(1)
             .screenId(dummyScreen.getScreenId())
             .startTime(LocalDateTime.of(2020, Month.JANUARY, 30, 0, 0))
             .endTime(LocalDateTime.of(2020, Month.JANUARY, 30, 2, 0))
@@ -50,6 +54,7 @@ public class AppTest {
   private Screen addDummyScreen(Theatre dummyTheatre, String[][] seatLayout) {
     return onBoardService.addScreen(
         Screen.builder()
+                .screenId(1)
             .name("S1")
             .theatreId(dummyTheatre.getTheatreId())
             .totalCapacity(10)
@@ -105,11 +110,26 @@ public class AppTest {
   private void bookAndPay(Integer userId, List<String> seatsToBook) {
     Booking booking = bookingService.book(userId, dummyShow.getShowId(), seatsToBook);
     Payment payment = paymentService.pay(booking);
+    List<ShowSeat> seatsForShows = showService.getSeatsForShows(booking.getShowId());
+    seatsForShows.forEach(showSeat -> {
+      if (seatsToBook.contains(showSeat.getSeatId())){
+        showSeat.setStatus(ShowSeat.ShowSeatStatus.PERMANENTLY_UNAVAILABLE);
+      }
+    });
+    bookingService.markBookingCompleted(booking);
     Booking updatedBooking = bookingService.get(booking.getBookingId());
     System.out.println(updatedBooking);
     System.out.println(payment);
   }
 
+  private void cancelAllBookings() {
+    bookingService.cancelBookings();
+    showService.getSeats().forEach(
+            showSeat ->
+                    showSeat.setStatus(ShowSeat.ShowSeatStatus.AVAILABLE));
+    paymentService.deletePayments();
+
+  }
   private List<String> getSameSeatForAllUser() {
     List<String> seatsToBook = new ArrayList<>();
     seatsToBook.add("a1");

@@ -3,6 +3,7 @@ package in.rsh.mtba.model;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 @Getter
@@ -15,7 +16,16 @@ public class Booking {
   private final int showId;
   private final int amount;
   private final List<String> seats;
-  private final BookingStatus status;
+  private BookingStatus status;
+  private String paymentId;
+
+  public void setPayment(String paymentId) {
+    this.paymentId = paymentId;
+  }
+
+  public void setStatus(BookingStatus bookingStatus) {
+    this.status = bookingStatus;
+  }
 
   public enum BookingStatus {
     PROCESSING,
