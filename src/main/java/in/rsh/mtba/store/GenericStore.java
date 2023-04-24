@@ -23,4 +23,12 @@ public class GenericStore<T> {
   public void put(Object id, T object) {
     store.put(id, object);
   }
+
+  public void delete(Object id) {
+    store.remove(id);
+  }
+
+  public void deleteAll() {
+    store.clear();
+  }
 }

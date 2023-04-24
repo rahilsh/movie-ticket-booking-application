@@ -22,9 +22,12 @@ public class PaymentService {
 
   public Payment pay(Booking booking) {
     Payment payment = makePayment(booking);
-    bookingService.markBookingCompleted(booking);
-    markSeatsBooked(booking);
+    booking.setPayment(payment.getPaymentId());
     return payment;
+  }
+
+  public void deletePayment(String paymentId) {
+    paymentStore.delete(paymentId);
   }
 
   private Payment makePayment(Booking booking) {
@@ -40,23 +43,15 @@ public class PaymentService {
     return payment;
   }
 
-  private void markSeatsBooked(Booking booking) {
-    booking
-        .getSeats()
-        .forEach(
-            seat ->
-                showSeatStore.update(
-                    seat,
-                    showSeatStore
-                        .get(seat)
-                        .toBuilder()
-                        .status(ShowSeatStatus.PERMANENTLY_UNAVAILABLE)
-                        .build()));
-  }
+
 
   public List<Payment> getAllPaymentsForABooking(int bookingId) {
     return paymentStore.getAll().stream()
         .filter(payment -> payment.getBookingId() == bookingId)
         .collect(Collectors.toList());
+  }
+
+  public void deletePayments() {
+    paymentStore.deleteAll();
   }
 }

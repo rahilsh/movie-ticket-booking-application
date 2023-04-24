@@ -10,7 +10,11 @@ import lombok.ToString;
 public class ShowSeat {
   private final String seatId;
   private final int showId;
-  private final ShowSeatStatus status;
+  private ShowSeatStatus status;
+
+  public void setStatus(ShowSeatStatus showSeatStatus) {
+    this.status = showSeatStatus;
+  }
 
   public enum ShowSeatStatus {
     AVAILABLE,

@@ -23,4 +23,8 @@ public class ShowService {
         .filter(showSeat -> showSeat.getShowId() == showId)
         .collect(Collectors.toList());
   }
+
+  public List<ShowSeat> getSeats() {
+    return showSeatStore.getAll();
+  }
 }
