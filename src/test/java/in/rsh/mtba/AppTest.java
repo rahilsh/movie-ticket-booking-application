@@ -1,5 +1,7 @@
 package in.rsh.mtba;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import in.rsh.mtba.model.*;
 import in.rsh.mtba.service.BookingService;
 import in.rsh.mtba.service.OnBoardService;
@@ -10,12 +12,12 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 // TODO: Add more test cases
-public class AppTest {
+class AppTest {
 
   private final OnBoardService onBoardService = new OnBoardService();
 
@@ -25,15 +27,15 @@ public class AppTest {
   private Show dummyShow;
   String[][] dummySeatLayout = {{"a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10"}};
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     Theatre dummyTheatre = addDummyTheatre();
     Screen dummyScreen = addDummyScreen(dummyTheatre, dummySeatLayout);
     dummyShow = addDummyShow(dummyScreen);
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     cancelAllBookings();
   }
 
@@ -65,7 +67,7 @@ public class AppTest {
   }
 
   @Test
-  public void bookTickets() {
+  void bookTickets() {
     List<Integer> users = getDummyUsers();
     users
         .parallelStream()
@@ -92,19 +94,21 @@ public class AppTest {
     return seatsToBook;
   }
 
-  @Test(expected = RuntimeException.class)
-  public void bookTickets_throwsException() {
-    List<Integer> users = getDummyUsers();
-    users
-        .parallelStream()
-        .forEach(
-            userId -> {
-              System.out.println("Processing user: " + userId);
-              printSeats();
-              List<String> seatsToBook = getSameSeatForAllUser();
-              bookAndPay(userId, seatsToBook);
-              printSeats();
-            });
+  @Test
+  void bookTickets_throwsException() {
+    assertThrows(RuntimeException.class, () -> {
+      List<Integer> users = getDummyUsers();
+      users
+          .parallelStream()
+          .forEach(
+              userId -> {
+                System.out.println("Processing user: " + userId);
+                printSeats();
+                List<String> seatsToBook = getSameSeatForAllUser();
+                bookAndPay(userId, seatsToBook);
+                printSeats();
+              });
+    });
   }
 
   private void bookAndPay(Integer userId, List<String> seatsToBook) {
