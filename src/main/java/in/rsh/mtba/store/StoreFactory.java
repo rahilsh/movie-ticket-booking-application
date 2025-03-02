@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StoreFactory {
-  Map<Type, GenericStore> storeMapping = new HashMap<>();
+  Map<Type, GenericStore<?>> storeMapping = new HashMap<>();
 
   private static StoreFactory storeFactory = null;
 

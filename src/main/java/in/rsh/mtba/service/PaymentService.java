@@ -43,8 +43,6 @@ public class PaymentService {
     return payment;
   }
 
-
-
   public List<Payment> getAllPaymentsForABooking(int bookingId) {
     return paymentStore.getAll().stream()
         .filter(payment -> payment.getBookingId() == bookingId)
