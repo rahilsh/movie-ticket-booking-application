@@ -16,6 +16,7 @@ public class Booking {
   private final int showId;
   private final int amount;
   private final List<String> seats;
+  @Setter
   private BookingStatus status;
   private String paymentId;
 
@@ -23,11 +24,7 @@ public class Booking {
     this.paymentId = paymentId;
   }
 
-  public void setStatus(BookingStatus bookingStatus) {
-    this.status = bookingStatus;
-  }
-
-  public enum BookingStatus {
+    public enum BookingStatus {
     PROCESSING,
     PAYMENT_INITIATED,
     PAYMENT_FAILED,
