@@ -28,18 +28,17 @@ public class ScreenService {
   @Transactional
   public ScreenResponse create(Long theatreId, ScreenRequest request) {
     Theatre theatre = theatreService.findById(theatreId);
-    Screen screen =
-        Screen.builder()
-            .name(request.getName())
-            .rows(request.getRows())
-            .cols(request.getCols())
-            .totalCapacity(request.getRows() * request.getCols())
-            .theatre(theatre)
-            .build();
+    Screen screen = Screen.builder()
+        .name(request.getName())
+        .rows(request.getRows())
+        .cols(request.getCols())
+        .totalCapacity(request.getRows() * request.getCols())
+        .theatreId(theatre.getId())
+        .theatreName(theatre.getName())
+        .build();
     Screen saved = screenRepository.save(screen);
     initSeats(saved, request.getRows(), request.getCols());
-    log.info(
-        "Created screen id={} name={} for theatreId={}", saved.getId(), saved.getName(), theatreId);
+    log.info("Created screen id={} name={} for theatreId={}", saved.getId(), saved.getName(), theatreId);
     return ScreenResponse.from(saved);
   }
 
@@ -48,37 +47,32 @@ public class ScreenService {
     for (int r = 0; r < rows; r++) {
       char rowChar = (char) ('A' + r);
       for (int c = 1; c <= cols; c++) {
-        seats.add(
-            Seat.builder()
-                .label(rowChar + String.valueOf(c))
-                .rowNumber(r)
-                .colNumber(c - 1)
-                .type(Seat.SeatType.REGULAR)
-                .screen(screen)
-                .build());
+        seats.add(Seat.builder()
+            .label(rowChar + String.valueOf(c))
+            .rowNumber(r)
+            .colNumber(c - 1)
+            .type(Seat.SeatType.REGULAR)
+            .screenId(screen.getId())
+            .build());
       }
     }
     seatRepository.saveAll(seats);
     log.debug("Initialized {} seats for screenId={}", seats.size(), screen.getId());
   }
 
-  @Transactional(readOnly = true)
   public ScreenResponse getById(Long id) {
     return ScreenResponse.from(findById(id));
   }
 
-  @Transactional(readOnly = true)
   public List<ScreenResponse> getByTheatre(Long theatreId) {
-    theatreService.findById(theatreId); // validate theatre exists
+    theatreService.findById(theatreId);
     return screenRepository.findByTheatreId(theatreId).stream()
         .map(ScreenResponse::from)
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public Screen findById(Long id) {
-    return screenRepository
-        .findById(id)
+    return screenRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Screen", id));
   }
 }

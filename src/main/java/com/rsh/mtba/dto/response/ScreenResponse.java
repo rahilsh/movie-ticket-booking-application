@@ -22,8 +22,8 @@ public class ScreenResponse {
         .totalCapacity(screen.getTotalCapacity())
         .rows(screen.getRows())
         .cols(screen.getCols())
-        .theatreId(screen.getTheatre().getId())
-        .theatreName(screen.getTheatre().getName())
+        .theatreId(screen.getTheatreId())
+        .theatreName(screen.getTheatreName())
         .build();
   }
 }

@@ -1,16 +1,11 @@
 package com.rsh.mtba.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
-@Table(
-    name = "show_seats",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          name = "uk_show_seats_show_seat",
-          columnNames = {"show_id", "seat_id"})
-    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,28 +13,22 @@ import lombok.*;
 @Builder
 public class ShowSeat {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  private Long showId;
+  private Long seatId;
+  private String seatLabel;
+  private int rowNumber;
+  private int colNumber;
+  private Seat.SeatType seatType;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
   @Builder.Default
   private ShowSeatStatus status = ShowSeatStatus.AVAILABLE;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "show_id", nullable = false)
-  private Show show;
-
-  @ManyToOne(fetch = FetchType.EAGER, optional = false)
-  @JoinColumn(name = "seat_id", nullable = false)
-  private Seat seat;
-
-  @Version private Long version; // optimistic locking
+  private Long version;
 
   public enum ShowSeatStatus {
     AVAILABLE,
-    LOCKED, // temporarily held during booking flow
-    BOOKED // permanently unavailable after successful payment
+    LOCKED,
+    BOOKED
   }
 }

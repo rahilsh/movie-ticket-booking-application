@@ -1,28 +1,16 @@
 package com.rsh.mtba.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import com.rsh.mtba.dto.request.PaymentRequest;
 import com.rsh.mtba.dto.response.PaymentResponse;
-import com.rsh.mtba.entity.*;
 import com.rsh.mtba.entity.Booking;
 import com.rsh.mtba.entity.Booking.BookingStatus;
 import com.rsh.mtba.entity.Payment;
 import com.rsh.mtba.entity.Payment.PaymentStatus;
-import com.rsh.mtba.entity.Screen;
-import com.rsh.mtba.entity.Show;
-import com.rsh.mtba.entity.Theatre;
-import com.rsh.mtba.entity.User;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.PaymentException;
 import com.rsh.mtba.repository.BookingRepository;
 import com.rsh.mtba.repository.PaymentRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.rsh.mtba.repository.ShowSeatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,61 +19,38 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
   @Mock private PaymentRepository paymentRepository;
   @Mock private BookingRepository bookingRepository;
   @Mock private BookingService bookingService;
+  @Mock private ShowSeatRepository showSeatRepository;
 
   @InjectMocks private PaymentService paymentService;
 
-  private User user;
   private Booking booking;
+  private Payment payment;
 
   @BeforeEach
   void setUp() {
-    user =
-        User.builder()
-            .id(1L)
-            .name("Alice")
-            .email("alice@example.com")
-            .passwordHash("hash")
-            .gender(User.Gender.FEMALE)
-            .role(User.Role.ROLE_USER)
-            .build();
-
-    Theatre theatre =
-        Theatre.builder().id(1L).name("PVR").address("MG Road").city("Bangalore").build();
-    Screen screen =
-        Screen.builder()
-            .id(1L)
-            .name("S1")
-            .rows(5)
-            .cols(10)
-            .totalCapacity(50)
-            .theatre(theatre)
-            .build();
-    Show show =
-        Show.builder()
-            .id(1L)
-            .movieName("Inception")
-            .startTime(LocalDateTime.now().plusHours(2))
-            .endTime(LocalDateTime.now().plusHours(5))
-            .basePriceInPaise(25000)
-            .screen(screen)
-            .build();
-
-    booking =
-        Booking.builder()
-            .id(10L)
-            .user(user)
-            .show(show)
-            .showSeats(List.of())
-            .totalAmountInPaise(25000)
-            .status(BookingStatus.PROCESSING)
-            .createdAt(LocalDateTime.now())
-            .build();
+    booking = Booking.builder()
+        .id(10L).userId(1L).showId(1L).movieName("Movie")
+        .seatLabels(List.of("A1")).totalAmountInPaise(25000)
+        .status(BookingStatus.PROCESSING).createdAt(LocalDateTime.now()).build();
+    payment = Payment.builder()
+        .id(1L).transactionId("TXN-1").bookingId(10L)
+        .amountInPaise(25000).status(PaymentStatus.INITIATED)
+        .createdAt(LocalDateTime.now()).build();
   }
 
   @Test
@@ -96,18 +61,10 @@ class PaymentServiceTest {
     request.setTransactionId("TXN-CUSTOM-123");
 
     when(bookingService.findById(10L)).thenReturn(booking);
-
-    Payment savedPayment =
-        Payment.builder()
-            .id(1L)
-            .transactionId("TXN-CUSTOM-123")
-            .booking(booking)
-            .amountInPaise(25000)
-            .status(PaymentStatus.INITIATED)
-            .createdAt(LocalDateTime.now())
-            .build();
-    when(paymentRepository.save(any(Payment.class))).thenReturn(savedPayment);
-    when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+    Payment saved = Payment.builder().id(1L).transactionId("TXN-CUSTOM-123").bookingId(10L)
+        .amountInPaise(25000).status(PaymentStatus.INITIATED).createdAt(LocalDateTime.now()).build();
+    when(paymentRepository.save(any())).thenReturn(saved);
+    when(bookingRepository.save(any())).thenReturn(booking);
 
     PaymentResponse response = paymentService.initiatePayment(1L, request);
 
@@ -121,7 +78,6 @@ class PaymentServiceTest {
   void initiatePayment_wrongUser_throws() {
     PaymentRequest request = new PaymentRequest();
     request.setBookingId(10L);
-
     when(bookingService.findById(10L)).thenReturn(booking);
 
     assertThatThrownBy(() -> paymentService.initiatePayment(99L, request))
@@ -133,10 +89,8 @@ class PaymentServiceTest {
   @DisplayName("initiatePayment() throws BookingException when booking not in PROCESSING state")
   void initiatePayment_notProcessing_throws() {
     booking.setStatus(BookingStatus.COMPLETED);
-
     PaymentRequest request = new PaymentRequest();
     request.setBookingId(10L);
-
     when(bookingService.findById(10L)).thenReturn(booking);
 
     assertThatThrownBy(() -> paymentService.initiatePayment(1L, request))
@@ -148,20 +102,10 @@ class PaymentServiceTest {
   @DisplayName("confirmPayment() marks payment COMPLETED and confirms booking")
   void confirmPayment_success() {
     booking.setStatus(BookingStatus.PAYMENT_INITIATED);
-    Payment payment =
-        Payment.builder()
-            .id(1L)
-            .transactionId("TXN-ABC")
-            .booking(booking)
-            .amountInPaise(25000)
-            .status(PaymentStatus.INITIATED)
-            .createdAt(LocalDateTime.now())
-            .build();
+    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    when(paymentRepository.findByTransactionId("TXN-ABC")).thenReturn(Optional.of(payment));
-    when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
-
-    PaymentResponse response = paymentService.confirmPayment("TXN-ABC");
+    PaymentResponse response = paymentService.confirmPayment("TXN-1");
 
     assertThat(response.getStatus()).isEqualTo("COMPLETED");
     verify(bookingService).confirmBooking(10L);
@@ -170,19 +114,10 @@ class PaymentServiceTest {
   @Test
   @DisplayName("confirmPayment() throws PaymentException if payment already failed")
   void confirmPayment_alreadyFailed_throws() {
-    Payment payment =
-        Payment.builder()
-            .id(1L)
-            .transactionId("TXN-ABC")
-            .booking(booking)
-            .amountInPaise(25000)
-            .status(PaymentStatus.FAILED)
-            .createdAt(LocalDateTime.now())
-            .build();
+    payment.setStatus(PaymentStatus.FAILED);
+    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
 
-    when(paymentRepository.findByTransactionId("TXN-ABC")).thenReturn(Optional.of(payment));
-
-    assertThatThrownBy(() -> paymentService.confirmPayment("TXN-ABC"))
+    assertThatThrownBy(() -> paymentService.confirmPayment("TXN-1"))
         .isInstanceOf(PaymentException.class)
         .hasMessageContaining("failed");
   }

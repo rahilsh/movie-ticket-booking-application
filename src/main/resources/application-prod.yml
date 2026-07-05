@@ -12,11 +12,6 @@ spring:
       max-lifetime: 1800000
       leak-detection-threshold: 60000
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-
   flyway:
     baseline-on-migrate: false
 
@@ -30,5 +25,5 @@ management:
 
 logging:
   level:
-    in.rsh.mtba: INFO
+    com.rsh.mtba: INFO
     org.springframework: WARN

@@ -26,34 +26,30 @@ public class UserService {
       throw new DuplicateResourceException(
           "User with email " + request.getEmail() + " already exists");
     }
-    User user =
-        User.builder()
-            .name(request.getName())
-            .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .phone(request.getPhone())
-            .gender(request.getGender())
-            .role(User.Role.ROLE_USER)
-            .build();
+    User user = User.builder()
+        .name(request.getName())
+        .email(request.getEmail())
+        .passwordHash(passwordEncoder.encode(request.getPassword()))
+        .phone(request.getPhone())
+        .gender(request.getGender())
+        .role(User.Role.ROLE_USER)
+        .build();
     User saved = userRepository.save(user);
     log.info("Registered new user with id={} email={}", saved.getId(), saved.getEmail());
     return UserResponse.from(saved);
   }
 
-  @Transactional(readOnly = true)
   public UserResponse getById(Long id) {
     return UserResponse.from(findById(id));
   }
 
-  @Transactional(readOnly = true)
   public User findById(Long id) {
-    return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
+    return userRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("User", id));
   }
 
-  @Transactional(readOnly = true)
   public User findByEmail(String email) {
-    return userRepository
-        .findByEmail(email)
+    return userRepository.findByEmail(email)
         .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
   }
 }

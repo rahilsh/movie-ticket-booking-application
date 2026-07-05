@@ -1,22 +1,23 @@
 package com.rsh.mtba.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import com.rsh.mtba.dto.request.TheatreRequest;
 import com.rsh.mtba.dto.response.TheatreResponse;
 import com.rsh.mtba.entity.Theatre;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.repository.TheatreRepository;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TheatreServiceExtendedTest {
@@ -32,9 +33,7 @@ class TheatreServiceExtendedTest {
     when(theatreRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     TheatreRequest req = new TheatreRequest();
-    req.setName("New");
-    req.setAddress("New Addr");
-    req.setCity("NewCity");
+    req.setName("New"); req.setAddress("New Addr"); req.setCity("NewCity");
 
     TheatreResponse resp = theatreService.update(1L, req);
     assertThat(resp.getName()).isEqualTo("New");
@@ -46,9 +45,7 @@ class TheatreServiceExtendedTest {
   void update_notFound() {
     when(theatreRepository.findById(99L)).thenReturn(Optional.empty());
     TheatreRequest req = new TheatreRequest();
-    req.setName("X");
-    req.setAddress("Y");
-    req.setCity("Z");
+    req.setName("X"); req.setAddress("Y"); req.setCity("Z");
     assertThatThrownBy(() -> theatreService.update(99L, req))
         .isInstanceOf(ResourceNotFoundException.class);
   }
@@ -56,9 +53,9 @@ class TheatreServiceExtendedTest {
   @Test
   @DisplayName("getAll() returns all theatres")
   void getAll_success() {
-    Theatre t1 = Theatre.builder().id(1L).name("A").address("A").city("C1").build();
-    Theatre t2 = Theatre.builder().id(2L).name("B").address("B").city("C2").build();
-    when(theatreRepository.findAll()).thenReturn(List.of(t1, t2));
+    when(theatreRepository.findAll()).thenReturn(List.of(
+        Theatre.builder().id(1L).name("A").address("A").city("C1").build(),
+        Theatre.builder().id(2L).name("B").address("B").city("C2").build()));
 
     List<TheatreResponse> result = theatreService.getAll();
     assertThat(result).hasSize(2);

@@ -1,27 +1,18 @@
 package com.rsh.mtba.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.rsh.mtba.dto.request.ShowRequest;
 import com.rsh.mtba.dto.response.ShowResponse;
 import com.rsh.mtba.dto.response.ShowSeatResponse;
-import com.rsh.mtba.entity.*;
 import com.rsh.mtba.entity.Screen;
 import com.rsh.mtba.entity.Seat;
 import com.rsh.mtba.entity.Show;
 import com.rsh.mtba.entity.ShowSeat;
 import com.rsh.mtba.entity.ShowSeat.ShowSeatStatus;
-import com.rsh.mtba.entity.Theatre;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.repository.SeatRepository;
 import com.rsh.mtba.repository.ShowRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +20,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ShowServiceTest {
@@ -40,7 +39,6 @@ class ShowServiceTest {
 
   @InjectMocks private ShowService showService;
 
-  private Theatre theatre;
   private Screen screen;
   private Show show;
   private Seat seat1, seat2;
@@ -48,59 +46,21 @@ class ShowServiceTest {
 
   @BeforeEach
   void setUp() {
-    theatre = Theatre.builder().id(1L).name("PVR").address("MG Road").city("Bangalore").build();
-    screen =
-        Screen.builder()
-            .id(1L)
-            .name("S1")
-            .rows(2)
-            .cols(2)
-            .totalCapacity(4)
-            .theatre(theatre)
-            .build();
-    show =
-        Show.builder()
-            .id(1L)
-            .movieName("Dune")
-            .screen(screen)
-            .startTime(LocalDateTime.now().plusDays(1))
-            .endTime(LocalDateTime.now().plusDays(1).plusHours(3))
-            .basePriceInPaise(30000)
-            .build();
-    seat1 =
-        Seat.builder()
-            .id(1L)
-            .label("A1")
-            .rowNumber(0)
-            .colNumber(0)
-            .type(Seat.SeatType.REGULAR)
-            .screen(screen)
-            .build();
-    seat2 =
-        Seat.builder()
-            .id(2L)
-            .label("A2")
-            .rowNumber(0)
-            .colNumber(1)
-            .type(Seat.SeatType.REGULAR)
-            .screen(screen)
-            .build();
-    ss1 =
-        ShowSeat.builder()
-            .id(1L)
-            .show(show)
-            .seat(seat1)
-            .status(ShowSeatStatus.AVAILABLE)
-            .version(0L)
-            .build();
-    ss2 =
-        ShowSeat.builder()
-            .id(2L)
-            .show(show)
-            .seat(seat2)
-            .status(ShowSeatStatus.AVAILABLE)
-            .version(0L)
-            .build();
+    screen = Screen.builder().id(1L).name("S1").rows(2).cols(2).totalCapacity(4)
+        .theatreId(1L).theatreName("PVR").build();
+    show = Show.builder().id(1L).movieName("Dune").screenId(1L).screenName("S1")
+        .theatreId(1L).theatreName("PVR")
+        .startTime(LocalDateTime.now().plusDays(1))
+        .endTime(LocalDateTime.now().plusDays(1).plusHours(3))
+        .basePriceInPaise(30000).build();
+    seat1 = Seat.builder().id(1L).label("A1").rowNumber(0).colNumber(0)
+        .type(Seat.SeatType.REGULAR).screenId(1L).build();
+    seat2 = Seat.builder().id(2L).label("A2").rowNumber(0).colNumber(1)
+        .type(Seat.SeatType.REGULAR).screenId(1L).build();
+    ss1 = ShowSeat.builder().id(1L).showId(1L).seatId(1L).seatLabel("A1")
+        .status(ShowSeatStatus.AVAILABLE).version(0L).build();
+    ss2 = ShowSeat.builder().id(2L).showId(1L).seatId(2L).seatLabel("A2")
+        .status(ShowSeatStatus.AVAILABLE).version(0L).build();
   }
 
   @Test
@@ -109,9 +69,8 @@ class ShowServiceTest {
     ShowRequest req = new ShowRequest();
     req.setMovieName("Bad");
     req.setStartTime(LocalDateTime.now().plusDays(1));
-    req.setEndTime(LocalDateTime.now()); // before start
+    req.setEndTime(LocalDateTime.now());
     req.setBasePriceInPaise(1000);
-
     when(screenService.findById(1L)).thenReturn(screen);
 
     assertThatThrownBy(() -> showService.create(1L, req))
@@ -148,7 +107,6 @@ class ShowServiceTest {
         .thenReturn(List.of(ss1));
 
     ShowResponse response = showService.getById(1L);
-
     assertThat(response.getMovieName()).isEqualTo("Dune");
     assertThat(response.getAvailableSeats()).isEqualTo(1);
   }
@@ -157,7 +115,6 @@ class ShowServiceTest {
   @DisplayName("getById() throws ResourceNotFoundException for unknown show")
   void getById_notFound() {
     when(showRepository.findById(99L)).thenReturn(Optional.empty());
-
     assertThatThrownBy(() -> showService.getById(99L))
         .isInstanceOf(ResourceNotFoundException.class);
   }
@@ -170,7 +127,6 @@ class ShowServiceTest {
         .thenReturn(List.of(ss1, ss2));
 
     List<ShowResponse> result = showService.getByScreen(1L);
-
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getAvailableSeats()).isEqualTo(2);
   }
@@ -178,12 +134,11 @@ class ShowServiceTest {
   @Test
   @DisplayName("getUpcoming() returns shows starting after now")
   void getUpcoming_success() {
-    when(showRepository.findUpcomingShows(any(LocalDateTime.class))).thenReturn(List.of(show));
+    when(showRepository.findUpcomingShows(any())).thenReturn(List.of(show));
     when(showSeatRepository.findByShowIdAndStatus(1L, ShowSeatStatus.AVAILABLE))
         .thenReturn(List.of());
 
     List<ShowResponse> result = showService.getUpcoming();
-
     assertThat(result).hasSize(1);
   }
 
@@ -194,7 +149,6 @@ class ShowServiceTest {
     when(showSeatRepository.findByShowId(1L)).thenReturn(List.of(ss1, ss2));
 
     List<ShowSeatResponse> result = showService.getSeats(1L);
-
     assertThat(result).hasSize(2);
     assertThat(result).extracting(ShowSeatResponse::getStatus).containsOnly("AVAILABLE");
   }
@@ -202,16 +156,8 @@ class ShowServiceTest {
   @Test
   @DisplayName("BLOCKED seats are not seeded as ShowSeats")
   void create_blockedSeatsNotSeeded() {
-    Seat blocked =
-        Seat.builder()
-            .id(3L)
-            .label("B1")
-            .rowNumber(1)
-            .colNumber(0)
-            .type(Seat.SeatType.BLOCKED)
-            .screen(screen)
-            .build();
-
+    Seat blocked = Seat.builder().id(3L).label("B1").rowNumber(1).colNumber(0)
+        .type(Seat.SeatType.BLOCKED).screenId(1L).build();
     ShowRequest req = new ShowRequest();
     req.setMovieName("Movie");
     req.setStartTime(LocalDateTime.now().plusDays(1));
@@ -226,7 +172,6 @@ class ShowServiceTest {
 
     showService.create(1L, req);
 
-    // Only 1 seat should be seeded (blocked excluded)
     verify(showSeatRepository).saveAll(argThat(list -> ((List<?>) list).size() == 1));
   }
 }

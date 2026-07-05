@@ -39,78 +39,69 @@ public class ShowService {
       throw new BookingException("End time must be after start time");
     }
 
-    Show show =
-        Show.builder()
-            .movieName(request.getMovieName())
-            .startTime(request.getStartTime())
-            .endTime(request.getEndTime())
-            .basePriceInPaise(request.getBasePriceInPaise())
-            .screen(screen)
-            .build();
+    Show show = Show.builder()
+        .movieName(request.getMovieName())
+        .startTime(request.getStartTime())
+        .endTime(request.getEndTime())
+        .basePriceInPaise(request.getBasePriceInPaise())
+        .screenId(screen.getId())
+        .screenName(screen.getName())
+        .theatreId(screen.getTheatreId())
+        .theatreName(screen.getTheatreName())
+        .build();
     Show saved = showRepository.save(show);
     initShowSeats(saved, screen);
 
-    long available =
-        showSeatRepository.findByShowIdAndStatus(saved.getId(), ShowSeatStatus.AVAILABLE).size();
-    log.info(
-        "Created show id={} movie='{}' screenId={}", saved.getId(), saved.getMovieName(), screenId);
-    return ShowResponse.from(saved, (int) available);
+    int available = showSeatRepository.findByShowIdAndStatus(saved.getId(), ShowSeatStatus.AVAILABLE).size();
+    log.info("Created show id={} movie='{}' screenId={}", saved.getId(), saved.getMovieName(), screenId);
+    return ShowResponse.from(saved, available);
   }
 
   private void initShowSeats(Show show, Screen screen) {
     List<Seat> seats = seatRepository.findByScreenId(screen.getId());
-    List<ShowSeat> showSeats =
-        seats.stream()
-            .filter(seat -> seat.getType() != Seat.SeatType.BLOCKED)
-            .map(
-                seat ->
-                    ShowSeat.builder()
-                        .show(show)
-                        .seat(seat)
-                        .status(ShowSeatStatus.AVAILABLE)
-                        .build())
-            .collect(Collectors.toList());
+    List<ShowSeat> showSeats = seats.stream()
+        .filter(seat -> seat.getType() != Seat.SeatType.BLOCKED)
+        .map(seat -> ShowSeat.builder()
+            .showId(show.getId())
+            .seatId(seat.getId())
+            .seatLabel(seat.getLabel())
+            .rowNumber(seat.getRowNumber())
+            .colNumber(seat.getColNumber())
+            .seatType(seat.getType())
+            .status(ShowSeatStatus.AVAILABLE)
+            .build())
+        .collect(Collectors.toList());
     showSeatRepository.saveAll(showSeats);
     log.debug("Initialized {} show seats for showId={}", showSeats.size(), show.getId());
   }
 
-  @Transactional(readOnly = true)
   public ShowResponse getById(Long id) {
     Show show = findById(id);
     int available = showSeatRepository.findByShowIdAndStatus(id, ShowSeatStatus.AVAILABLE).size();
     return ShowResponse.from(show, available);
   }
 
-  @Transactional(readOnly = true)
   public List<ShowResponse> getByScreen(Long screenId) {
     screenService.findById(screenId);
     return showRepository.findByScreenId(screenId).stream()
-        .map(
-            show -> {
-              int available =
-                  showSeatRepository
-                      .findByShowIdAndStatus(show.getId(), ShowSeatStatus.AVAILABLE)
-                      .size();
-              return ShowResponse.from(show, available);
-            })
+        .map(show -> {
+          int available = showSeatRepository
+              .findByShowIdAndStatus(show.getId(), ShowSeatStatus.AVAILABLE).size();
+          return ShowResponse.from(show, available);
+        })
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public List<ShowResponse> getUpcoming() {
     return showRepository.findUpcomingShows(LocalDateTime.now()).stream()
-        .map(
-            show -> {
-              int available =
-                  showSeatRepository
-                      .findByShowIdAndStatus(show.getId(), ShowSeatStatus.AVAILABLE)
-                      .size();
-              return ShowResponse.from(show, available);
-            })
+        .map(show -> {
+          int available = showSeatRepository
+              .findByShowIdAndStatus(show.getId(), ShowSeatStatus.AVAILABLE).size();
+          return ShowResponse.from(show, available);
+        })
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public List<ShowSeatResponse> getSeats(Long showId) {
     findById(showId);
     return showSeatRepository.findByShowId(showId).stream()
@@ -118,8 +109,8 @@ public class ShowService {
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public Show findById(Long id) {
-    return showRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Show", id));
+    return showRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Show", id));
   }
 }

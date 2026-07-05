@@ -21,40 +21,34 @@ public class TheatreService {
 
   @Transactional
   public TheatreResponse create(TheatreRequest request) {
-    Theatre theatre =
-        Theatre.builder()
-            .name(request.getName())
-            .address(request.getAddress())
-            .city(request.getCity())
-            .build();
+    Theatre theatre = Theatre.builder()
+        .name(request.getName())
+        .address(request.getAddress())
+        .city(request.getCity())
+        .build();
     Theatre saved = theatreRepository.save(theatre);
     log.info("Created theatre id={} name={}", saved.getId(), saved.getName());
     return TheatreResponse.from(saved);
   }
 
-  @Transactional(readOnly = true)
   public TheatreResponse getById(Long id) {
     return TheatreResponse.from(findById(id));
   }
 
-  @Transactional(readOnly = true)
   public List<TheatreResponse> getAll() {
     return theatreRepository.findAll().stream()
         .map(TheatreResponse::from)
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public List<TheatreResponse> getByCity(String city) {
     return theatreRepository.findByCity(city).stream()
         .map(TheatreResponse::from)
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public Theatre findById(Long id) {
-    return theatreRepository
-        .findById(id)
+    return theatreRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Theatre", id));
   }
 
@@ -69,8 +63,8 @@ public class TheatreService {
 
   @Transactional
   public void delete(Long id) {
-    Theatre theatre = findById(id);
-    theatreRepository.delete(theatre);
+    findById(id); // validate exists
+    theatreRepository.delete(id);
     log.info("Deleted theatre id={}", id);
   }
 }
