@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mtba_dev
+    username: ${DB_USERNAME:mtba}
+    password: ${DB_PASSWORD:mtba}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    baseline-on-migrate: true
+
+logging:
+  level:
+    in.rsh.mtba: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
