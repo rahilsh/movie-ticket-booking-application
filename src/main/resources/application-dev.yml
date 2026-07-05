@@ -11,19 +11,11 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
   flyway:
     baseline-on-migrate: true
 
 logging:
   level:
-    in.rsh.mtba: DEBUG
+    com.rsh.mtba: DEBUG
     org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.springframework.jdbc.core: DEBUG

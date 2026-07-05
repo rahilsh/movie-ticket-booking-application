@@ -31,44 +31,42 @@ public class BookingService {
   private final UserService userService;
 
   /**
-   * Creates a booking and locks the requested seats using pessimistic DB-level locking. This
-   * prevents double-booking under concurrent requests without relying on JVM-level synchronization
-   * (which breaks in a multi-node deployment).
+   * Creates a booking and locks the requested seats with SELECT ... FOR UPDATE.
+   * Prevents double-booking under concurrent requests across multiple nodes.
    */
   @Transactional
   public BookingResponse book(Long userId, BookingRequest request) {
-    User user = userService.findById(userId);
+    userService.findById(userId); // validate user exists
     Show show = showService.findById(request.getShowId());
 
-    // Acquire pessimistic write lock on the target seats to prevent concurrent booking
-    List<ShowSeat> showSeats =
-        showSeatRepository.findByShowIdAndSeatLabelInWithLock(
-            request.getShowId(), request.getSeatLabels());
+    // Acquire pessimistic write lock at DB level
+    List<ShowSeat> showSeats = showSeatRepository
+        .findByShowIdAndSeatLabelInWithLock(request.getShowId(), request.getSeatLabels());
 
     validateSeats(request.getSeatLabels(), showSeats);
 
-    // Mark seats as LOCKED while booking is in progress
-    showSeats.forEach(seat -> seat.setStatus(ShowSeatStatus.LOCKED));
+    // Mark seats LOCKED
+    showSeats.forEach(ss -> ss.setStatus(ShowSeatStatus.LOCKED));
     showSeatRepository.saveAll(showSeats);
 
     int totalAmount = showSeats.size() * show.getBasePriceInPaise();
 
-    Booking booking =
-        Booking.builder()
-            .user(user)
-            .show(show)
-            .showSeats(showSeats)
-            .totalAmountInPaise(totalAmount)
-            .status(BookingStatus.PROCESSING)
-            .build();
-
+    Booking booking = Booking.builder()
+        .userId(userId)
+        .showId(show.getId())
+        .movieName(show.getMovieName())
+        .totalAmountInPaise(totalAmount)
+        .status(BookingStatus.PROCESSING)
+        .build();
     Booking saved = bookingRepository.save(booking);
-    log.info(
-        "Created booking id={} userId={} showId={} seats={}",
-        saved.getId(),
-        userId,
-        request.getShowId(),
-        request.getSeatLabels());
+
+    // Persist the booking ↔ show_seat join records
+    List<Long> showSeatIds = showSeats.stream().map(ShowSeat::getId).collect(Collectors.toList());
+    bookingRepository.saveBookingSeats(saved.getId(), showSeatIds);
+    saved.setSeatLabels(request.getSeatLabels());
+
+    log.info("Created booking id={} userId={} showId={} seats={}",
+        saved.getId(), userId, request.getShowId(), request.getSeatLabels());
     return BookingResponse.from(saved);
   }
 
@@ -76,22 +74,27 @@ public class BookingService {
   public BookingResponse confirmBooking(Long bookingId) {
     Booking booking = findById(bookingId);
     if (booking.getStatus() != BookingStatus.PAYMENT_INITIATED) {
-      throw new BookingException(
-          "Booking is not in PAYMENT_INITIATED state: " + booking.getStatus());
+      throw new BookingException("Booking is not in PAYMENT_INITIATED state: " + booking.getStatus());
     }
     booking.setStatus(BookingStatus.COMPLETED);
-    booking.getShowSeats().forEach(seat -> seat.setStatus(ShowSeatStatus.BOOKED));
-    showSeatRepository.saveAll(booking.getShowSeats());
-    Booking updated = bookingRepository.save(booking);
+    bookingRepository.save(booking);
+
+    // Mark all booked seats as BOOKED
+    List<ShowSeat> seats = showSeatRepository.findByShowId(booking.getShowId()).stream()
+        .filter(ss -> booking.getSeatLabels().contains(ss.getSeatLabel()))
+        .collect(Collectors.toList());
+    seats.forEach(ss -> ss.setStatus(ShowSeatStatus.BOOKED));
+    showSeatRepository.saveAll(seats);
+
     log.info("Confirmed booking id={}", bookingId);
-    return BookingResponse.from(updated);
+    return BookingResponse.from(booking);
   }
 
   @Transactional
   public BookingResponse cancelBooking(Long bookingId, Long requestingUserId) {
     Booking booking = findById(bookingId);
 
-    if (!booking.getUser().getId().equals(requestingUserId)) {
+    if (!booking.getUserId().equals(requestingUserId)) {
       throw new BookingException("You can only cancel your own bookings");
     }
     if (booking.getStatus() == BookingStatus.COMPLETED) {
@@ -102,20 +105,23 @@ public class BookingService {
     }
 
     booking.setStatus(BookingStatus.CANCELLED);
-    // Release the seats back to AVAILABLE
-    booking.getShowSeats().forEach(seat -> seat.setStatus(ShowSeatStatus.AVAILABLE));
-    showSeatRepository.saveAll(booking.getShowSeats());
-    Booking updated = bookingRepository.save(booking);
+    bookingRepository.save(booking);
+
+    // Release seats back to AVAILABLE
+    List<ShowSeat> seats = showSeatRepository.findByShowId(booking.getShowId()).stream()
+        .filter(ss -> booking.getSeatLabels().contains(ss.getSeatLabel()))
+        .collect(Collectors.toList());
+    seats.forEach(ss -> ss.setStatus(ShowSeatStatus.AVAILABLE));
+    showSeatRepository.saveAll(seats);
+
     log.info("Cancelled booking id={}", bookingId);
-    return BookingResponse.from(updated);
+    return BookingResponse.from(booking);
   }
 
-  @Transactional(readOnly = true)
   public BookingResponse getById(Long id) {
     return BookingResponse.from(findById(id));
   }
 
-  @Transactional(readOnly = true)
   public List<BookingResponse> getByUser(Long userId) {
     userService.findById(userId);
     return bookingRepository.findByUserId(userId).stream()
@@ -123,30 +129,23 @@ public class BookingService {
         .collect(Collectors.toList());
   }
 
-  @Transactional(readOnly = true)
   public Booking findById(Long id) {
-    return bookingRepository
-        .findById(id)
+    return bookingRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
   }
 
   private void validateSeats(List<String> requestedLabels, List<ShowSeat> fetchedSeats) {
     if (fetchedSeats.size() != requestedLabels.size()) {
-      List<String> foundLabels =
-          fetchedSeats.stream().map(ss -> ss.getSeat().getLabel()).collect(Collectors.toList());
-      List<String> missing =
-          requestedLabels.stream()
-              .filter(l -> !foundLabels.contains(l))
-              .collect(Collectors.toList());
+      List<String> foundLabels = fetchedSeats.stream()
+          .map(ShowSeat::getSeatLabel).collect(Collectors.toList());
+      List<String> missing = requestedLabels.stream()
+          .filter(l -> !foundLabels.contains(l)).collect(Collectors.toList());
       throw new ResourceNotFoundException("Seats not found for this show: " + missing);
     }
-
-    List<String> unavailable =
-        fetchedSeats.stream()
-            .filter(ss -> ss.getStatus() != ShowSeatStatus.AVAILABLE)
-            .map(ss -> ss.getSeat().getLabel())
-            .collect(Collectors.toList());
-
+    List<String> unavailable = fetchedSeats.stream()
+        .filter(ss -> ss.getStatus() != ShowSeatStatus.AVAILABLE)
+        .map(ShowSeat::getSeatLabel)
+        .collect(Collectors.toList());
     if (!unavailable.isEmpty()) {
       throw new SeatNotAvailableException(unavailable);
     }

@@ -17,10 +17,10 @@ public class ShowSeatResponse {
   public static ShowSeatResponse from(ShowSeat showSeat) {
     return ShowSeatResponse.builder()
         .id(showSeat.getId())
-        .seatLabel(showSeat.getSeat().getLabel())
-        .rowNumber(showSeat.getSeat().getRowNumber())
-        .colNumber(showSeat.getSeat().getColNumber())
-        .seatType(showSeat.getSeat().getType().name())
+        .seatLabel(showSeat.getSeatLabel())
+        .rowNumber(showSeat.getRowNumber())
+        .colNumber(showSeat.getColNumber())
+        .seatType(showSeat.getSeatType() != null ? showSeat.getSeatType().name() : null)
         .status(showSeat.getStatus().name())
         .build();
   }

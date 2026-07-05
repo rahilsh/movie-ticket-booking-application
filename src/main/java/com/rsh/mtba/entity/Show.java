@@ -1,19 +1,12 @@
 package com.rsh.mtba.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.util.List;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
-@Table(
-    name = "shows",
-    indexes = {
-      @Index(name = "idx_shows_screen_id", columnList = "screen_id"),
-      @Index(name = "idx_shows_start_time", columnList = "start_time")
-    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,29 +14,14 @@ import lombok.*;
 @Builder
 public class Show {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
-  @NotBlank
-  @Column(nullable = false)
   private String movieName;
-
-  @NotNull
-  @Column(nullable = false)
   private LocalDateTime startTime;
-
-  @NotNull
-  @Column(nullable = false)
   private LocalDateTime endTime;
-
-  @Column(nullable = false)
-  private int basePriceInPaise; // price per seat in paise (e.g. 25000 = ₹250)
-
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "screen_id", nullable = false)
-  private Screen screen;
-
-  @OneToMany(mappedBy = "show", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-  private List<ShowSeat> showSeats;
+  private int basePriceInPaise;
+  private Long screenId;
+  // Denormalized for response convenience — populated by join queries
+  private String screenName;
+  private Long theatreId;
+  private String theatreName;
 }

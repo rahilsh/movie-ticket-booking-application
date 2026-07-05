@@ -1,11 +1,12 @@
 package com.rsh.mtba.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
-@Table(name = "payments")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,32 +14,20 @@ import lombok.*;
 @Builder
 public class Payment {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
-  @Column(nullable = false, unique = true)
-  private String transactionId; // external payment gateway reference
-
-  @Column(nullable = false)
+  private String transactionId;
+  private Long bookingId;
   private int amountInPaise;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
   @Builder.Default
   private PaymentStatus status = PaymentStatus.INITIATED;
 
-  @Column private String failureReason;
+  private String failureReason;
 
-  @Column(nullable = false, updatable = false)
   @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
-  @Column private LocalDateTime completedAt;
-
-  @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "booking_id", nullable = false, unique = true)
-  private Booking booking;
+  private LocalDateTime completedAt;
 
   public enum PaymentStatus {
     INITIATED,

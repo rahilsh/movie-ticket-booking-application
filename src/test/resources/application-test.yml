@@ -1,18 +1,14 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:mtba_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    url: jdbc:h2:mem:mtba_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;NON_KEYWORDS=value
     username: sa
     password:
     driver-class-name: org.h2.Driver
 
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-    database-platform: org.hibernate.dialect.H2Dialect
-
   flyway:
-    enabled: false   # Flyway disabled for tests; Hibernate creates schema via ddl-auto
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
 app:
   jwt:
@@ -21,5 +17,6 @@ app:
 
 logging:
   level:
-    in.rsh.mtba: DEBUG
+    com.rsh.mtba: DEBUG
     org.springframework.security: WARN
+    org.springframework.jdbc.core: DEBUG

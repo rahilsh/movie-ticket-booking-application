@@ -26,10 +26,10 @@ public class ShowResponse {
         .startTime(show.getStartTime())
         .endTime(show.getEndTime())
         .basePriceInPaise(show.getBasePriceInPaise())
-        .screenId(show.getScreen().getId())
-        .screenName(show.getScreen().getName())
-        .theatreId(show.getScreen().getTheatre().getId())
-        .theatreName(show.getScreen().getTheatre().getName())
+        .screenId(show.getScreenId())
+        .screenName(show.getScreenName())
+        .theatreId(show.getTheatreId())
+        .theatreName(show.getTheatreName())
         .availableSeats(availableSeats)
         .build();
   }

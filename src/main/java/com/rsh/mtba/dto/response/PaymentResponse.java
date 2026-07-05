@@ -21,7 +21,7 @@ public class PaymentResponse {
     return PaymentResponse.builder()
         .id(payment.getId())
         .transactionId(payment.getTransactionId())
-        .bookingId(payment.getBooking().getId())
+        .bookingId(payment.getBookingId())
         .amountInPaise(payment.getAmountInPaise())
         .status(payment.getStatus().name())
         .failureReason(payment.getFailureReason())
