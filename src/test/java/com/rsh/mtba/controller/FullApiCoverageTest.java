@@ -31,7 +31,9 @@ import com.rsh.mtba.repository.ShowSeatRepository;
 import com.rsh.mtba.repository.TheatreRepository;
 import com.rsh.mtba.repository.UserRepository;
 import com.rsh.mtba.security.JwtUtil;
+import com.rsh.mtba.util.TestDataCleaner;
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,6 +62,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FullApiCoverageTest {
 
     private static String adminToken;
@@ -80,25 +84,12 @@ class FullApiCoverageTest {
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private JwtUtil jwtUtil;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private TestDataCleaner cleaner;
 
     @BeforeAll
-    static void resetStatic() {
-        adminToken = userToken = null;
-        theatreId = screenId = showId = bookingId = userId = null;
-        txnId = null;
-    }
-
-    @BeforeEach
-    void seedOnce() {
-        if (adminToken != null) return; // Only seed on first test
-
-        paymentRepository.deleteAll();
-        bookingRepository.deleteAll();
-        showSeatRepository.deleteAll();
-        showRepository.deleteAll();
-        screenRepository.deleteAll();
-        theatreRepository.deleteAll();
-        userRepository.deleteAll();
+    void setUpAll() {
+        // Clean before this class starts so we begin with a guaranteed empty DB
+        cleaner.clean();
 
         User admin = userRepository.save(User.builder()
             .name("Admin").email("cov-admin@test.com")
@@ -113,6 +104,12 @@ class FullApiCoverageTest {
         userId = regularUser.getId();
         adminToken = jwtUtil.generateToken(admin.getEmail(), admin.getRole().name());
         userToken = jwtUtil.generateToken(regularUser.getEmail(), regularUser.getRole().name());
+    }
+
+    @AfterAll
+    void tearDownAll() {
+        // Clean after this class finishes so no data leaks to subsequent test classes
+        cleaner.clean();
     }
 
     // ────── Setup: create theatre / screen / show ──────

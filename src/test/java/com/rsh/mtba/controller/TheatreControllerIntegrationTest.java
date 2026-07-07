@@ -11,6 +11,8 @@ import com.rsh.mtba.entity.User.Gender;
 import com.rsh.mtba.repository.TheatreRepository;
 import com.rsh.mtba.repository.UserRepository;
 import com.rsh.mtba.security.JwtUtil;
+import com.rsh.mtba.util.TestDataCleaner;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,15 +35,14 @@ class TheatreControllerIntegrationTest {
   @Autowired private UserRepository userRepository;
   @Autowired private JwtUtil jwtUtil;
   @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private TestDataCleaner cleaner;
 
   private String adminToken;
   private String userToken;
 
   @BeforeEach
   void setUp() {
-    theatreRepository.deleteAll();
-    userRepository.deleteAll();
-
+    cleaner.clean();
     User admin =
         userRepository.save(
             User.builder()
@@ -64,6 +65,11 @@ class TheatreControllerIntegrationTest {
 
     adminToken = jwtUtil.generateToken(admin.getEmail(), admin.getRole().name());
     userToken = jwtUtil.generateToken(regularUser.getEmail(), regularUser.getRole().name());
+  }
+
+  @AfterEach
+  void tearDown() {
+    cleaner.clean();
   }
 
   @Test
