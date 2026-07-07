@@ -28,13 +28,16 @@ import com.rsh.mtba.repository.ShowRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
 import com.rsh.mtba.repository.TheatreRepository;
 import com.rsh.mtba.repository.UserRepository;
+import com.rsh.mtba.util.TestDataCleaner;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +51,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -62,18 +64,19 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BookingFlowFunctionalTest {
 
-    // Shared state across ordered tests (stored as static so @TestMethodOrder works)
-    private static String userToken;
-    private static String adminToken;
-    private static Long theatreId;
-    private static Long screenId;
-    private static Long showId;
-    private static Long bookingId;
-    private static Long cancelBookingId;
-    private static String transactionId;
+    // Shared state across ordered tests within this class
+    private String userToken;
+    private String adminToken;
+    private Long theatreId;
+    private Long screenId;
+    private Long showId;
+    private Long bookingId;
+    private Long cancelBookingId;
+    private String transactionId;
+
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private UserRepository userRepository;
     @Autowired private TheatreRepository theatreRepository;
@@ -83,18 +86,16 @@ class BookingFlowFunctionalTest {
     @Autowired private BookingRepository bookingRepository;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private TestDataCleaner cleaner;
 
     @BeforeAll
-    static void resetState() {
-        // Reset static state before the class runs (DirtiesContext gives a fresh context)
-        userToken = null;
-        adminToken = null;
-        theatreId = null;
-        screenId = null;
-        showId = null;
-        bookingId = null;
-        cancelBookingId = null;
-        transactionId = null;
+    void setUpAll() {
+        cleaner.clean();
+    }
+
+    @AfterAll
+    void tearDownAll() {
+        cleaner.clean();
     }
 
     // ─────────────────────────── Auth ──────────────────────────────────

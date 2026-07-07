@@ -11,6 +11,8 @@ import com.rsh.mtba.dto.request.LoginRequest;
 import com.rsh.mtba.dto.request.RegisterRequest;
 import com.rsh.mtba.entity.User.Gender;
 import com.rsh.mtba.repository.UserRepository;
+import com.rsh.mtba.util.TestDataCleaner;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,10 +31,16 @@ class AuthControllerIntegrationTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserRepository userRepository;
+  @Autowired private TestDataCleaner cleaner;
 
   @BeforeEach
   void cleanDb() {
-    userRepository.deleteAll();
+    cleaner.clean();
+  }
+
+  @AfterEach
+  void tearDown() {
+    cleaner.clean();
   }
 
   @Test
