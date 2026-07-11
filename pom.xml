@@ -25,7 +25,7 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <lombok.version>1.18.46</lombok.version>
     <postgresql.version>42.7.12</postgresql.version>
-    <jacoco.version>0.8.12</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <jacoco.minimum.coverage>0.85</jacoco.minimum.coverage>
   </properties>
 
