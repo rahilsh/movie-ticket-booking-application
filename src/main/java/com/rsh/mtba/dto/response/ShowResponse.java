@@ -4,8 +4,12 @@ import com.rsh.mtba.entity.Show;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ShowResponse {
   private Long id;

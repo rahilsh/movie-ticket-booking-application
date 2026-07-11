@@ -3,8 +3,12 @@ package com.rsh.mtba.dto.response;
 import com.rsh.mtba.entity.User;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UserResponse {
   private Long id;

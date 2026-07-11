@@ -10,8 +10,10 @@ spring:
     locations: classpath:db/migration
 
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
+    use-jackson2-defaults: true
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
 
