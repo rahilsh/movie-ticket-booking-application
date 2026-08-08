@@ -76,6 +76,12 @@ public class PaymentRepository {
     return r.isEmpty() ? Optional.empty() : Optional.of(r.get(0));
   }
 
+  public Optional<Payment> findByTransactionIdWithLock(String transactionId) {
+    List<Payment> r = jdbc.query(
+        "SELECT * FROM payments WHERE transaction_id=? FOR UPDATE", ROW_MAPPER, transactionId);
+    return r.isEmpty() ? Optional.empty() : Optional.of(r.get(0));
+  }
+
   public Optional<Payment> findByBookingId(Long bookingId) {
     List<Payment> r = jdbc.query(
         "SELECT * FROM payments WHERE booking_id=?", ROW_MAPPER, bookingId);

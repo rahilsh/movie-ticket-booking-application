@@ -46,21 +46,26 @@ public class PaymentController {
 
   @GetMapping("/{id}")
   @Operation(summary = "Get payment by ID")
-  public ResponseEntity<PaymentResponse> getById(@PathVariable Long id) {
-    return ResponseEntity.ok(paymentService.getById(id));
+  public ResponseEntity<PaymentResponse> getById(
+      @PathVariable Long id, Authentication authentication) {
+    return ResponseEntity.ok(paymentService.getById(id, resolveUser(authentication)));
   }
 
   @GetMapping("/booking/{bookingId}")
   @Operation(summary = "Get payment for a booking")
-  public ResponseEntity<PaymentResponse> getByBooking(@PathVariable Long bookingId) {
-    return ResponseEntity.ok(paymentService.getByBookingId(bookingId));
+  public ResponseEntity<PaymentResponse> getByBooking(
+      @PathVariable Long bookingId, Authentication authentication) {
+    return ResponseEntity.ok(paymentService.getByBookingId(bookingId, resolveUser(authentication)));
   }
 
   private Long resolveUserId(Authentication authentication) {
+    return resolveUser(authentication).getId();
+  }
+
+  private User resolveUser(Authentication authentication) {
     String email = authentication.getName();
     return userRepository
         .findByEmail(email)
-        .map(User::getId)
         .orElseThrow(() -> new RuntimeException("Authenticated user not found: " + email));
   }
 }

@@ -7,6 +7,7 @@ import com.rsh.mtba.entity.Payment;
 import com.rsh.mtba.entity.Payment.PaymentStatus;
 import com.rsh.mtba.entity.ShowSeat;
 import com.rsh.mtba.entity.ShowSeat.ShowSeatStatus;
+import com.rsh.mtba.entity.User;
 import com.rsh.mtba.exception.PaymentException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.repository.BookingRepository;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +43,7 @@ class PaymentServiceExtendedTest {
   private Booking booking;
   private Payment payment;
   private ShowSeat showSeat;
+  private User owner;
 
   @BeforeEach
   void setUp() {
@@ -54,13 +57,14 @@ class PaymentServiceExtendedTest {
         .id(1L).transactionId("TXN-1").bookingId(10L)
         .amountInPaise(25000).status(PaymentStatus.INITIATED)
         .createdAt(LocalDateTime.now()).build();
+    owner = User.builder().id(1L).role(User.Role.ROLE_USER).build();
   }
 
   @Test
   @DisplayName("confirmPayment() is idempotent — returns COMPLETED if already COMPLETED")
   void confirmPayment_idempotent() {
     payment.setStatus(PaymentStatus.COMPLETED);
-    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
 
     PaymentResponse resp = paymentService.confirmPayment("TXN-1");
 
@@ -71,7 +75,7 @@ class PaymentServiceExtendedTest {
   @Test
   @DisplayName("failPayment() marks payment FAILED and releases seats")
   void failPayment_success() {
-    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
     when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(bookingService.findById(10L)).thenReturn(booking);
     when(bookingRepository.save(any())).thenReturn(booking);
@@ -88,7 +92,7 @@ class PaymentServiceExtendedTest {
   @Test
   @DisplayName("failPayment() throws ResourceNotFoundException for unknown transactionId")
   void failPayment_notFound() {
-    when(paymentRepository.findByTransactionId("UNKNOWN")).thenReturn(Optional.empty());
+    when(paymentRepository.findByTransactionIdWithLock("UNKNOWN")).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> paymentService.failPayment("UNKNOWN", "reason"))
         .isInstanceOf(ResourceNotFoundException.class);
@@ -99,7 +103,9 @@ class PaymentServiceExtendedTest {
   void getById_success() {
     when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
 
-    PaymentResponse resp = paymentService.getById(1L);
+    when(bookingService.findById(10L)).thenReturn(booking);
+
+    PaymentResponse resp = paymentService.getById(1L, owner);
 
     assertThat(resp.getTransactionId()).isEqualTo("TXN-1");
     assertThat(resp.getAmountInPaise()).isEqualTo(25000);
@@ -110,7 +116,7 @@ class PaymentServiceExtendedTest {
   void getById_notFound() {
     when(paymentRepository.findById(999L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> paymentService.getById(999L))
+    assertThatThrownBy(() -> paymentService.getById(999L, owner))
         .isInstanceOf(ResourceNotFoundException.class);
   }
 
@@ -118,8 +124,9 @@ class PaymentServiceExtendedTest {
   @DisplayName("getByBookingId() returns payment for booking")
   void getByBookingId_success() {
     when(paymentRepository.findByBookingId(10L)).thenReturn(Optional.of(payment));
+    when(bookingService.findById(10L)).thenReturn(booking);
 
-    PaymentResponse resp = paymentService.getByBookingId(10L);
+    PaymentResponse resp = paymentService.getByBookingId(10L, owner);
 
     assertThat(resp.getBookingId()).isEqualTo(10L);
   }
@@ -127,9 +134,11 @@ class PaymentServiceExtendedTest {
   @Test
   @DisplayName("getByBookingId() throws ResourceNotFoundException when no payment for booking")
   void getByBookingId_notFound() {
+    when(bookingService.findById(999L)).thenReturn(
+        Booking.builder().id(999L).userId(1L).build());
     when(paymentRepository.findByBookingId(999L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> paymentService.getByBookingId(999L))
+    assertThatThrownBy(() -> paymentService.getByBookingId(999L, owner))
         .isInstanceOf(ResourceNotFoundException.class);
   }
 
@@ -137,9 +146,45 @@ class PaymentServiceExtendedTest {
   @DisplayName("confirmPayment() throws PaymentException if payment already FAILED")
   void confirmPayment_alreadyFailed_throws() {
     payment.setStatus(PaymentStatus.FAILED);
-    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
 
     assertThatThrownBy(() -> paymentService.confirmPayment("TXN-1"))
+        .isInstanceOf(PaymentException.class);
+  }
+
+  @Test
+  @DisplayName("payment reads deny unrelated users and allow administrators")
+  void paymentRead_authorization() {
+    when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+    when(bookingService.findById(10L)).thenReturn(booking);
+    User other = User.builder().id(2L).role(User.Role.ROLE_USER).build();
+    User admin = User.builder().id(3L).role(User.Role.ROLE_ADMIN).build();
+
+    assertThatThrownBy(() -> paymentService.getById(1L, other))
+        .isInstanceOf(AccessDeniedException.class);
+    assertThat(paymentService.getById(1L, admin).getId()).isEqualTo(1L);
+  }
+
+  @Test
+  @DisplayName("failPayment() is idempotent and preserves the first failure reason")
+  void failPayment_idempotent() {
+    payment.setStatus(PaymentStatus.FAILED);
+    payment.setFailureReason("Original reason");
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
+
+    PaymentResponse response = paymentService.failPayment("TXN-1", "Later reason");
+
+    assertThat(response.getFailureReason()).isEqualTo("Original reason");
+    verify(paymentRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("failPayment() rejects completed payments")
+  void failPayment_completed_throws() {
+    payment.setStatus(PaymentStatus.COMPLETED);
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
+
+    assertThatThrownBy(() -> paymentService.failPayment("TXN-1", "Late callback"))
         .isInstanceOf(PaymentException.class);
   }
 }

@@ -8,6 +8,7 @@ import com.rsh.mtba.entity.Show;
 import com.rsh.mtba.entity.ShowSeat;
 import com.rsh.mtba.entity.ShowSeat.ShowSeatStatus;
 import com.rsh.mtba.entity.User;
+import com.rsh.mtba.entity.User.Role;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.exception.SeatNotAvailableException;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -118,8 +120,13 @@ public class BookingService {
     return BookingResponse.from(booking);
   }
 
-  public BookingResponse getById(Long id) {
-    return BookingResponse.from(findById(id));
+  public BookingResponse getById(Long id, User requestingUser) {
+    Booking booking = findById(id);
+    if (!booking.getUserId().equals(requestingUser.getId())
+        && requestingUser.getRole() != Role.ROLE_ADMIN) {
+      throw new AccessDeniedException("Booking belongs to another user");
+    }
+    return BookingResponse.from(booking);
   }
 
   public List<BookingResponse> getByUser(Long userId) {
@@ -131,6 +138,11 @@ public class BookingService {
 
   public Booking findById(Long id) {
     return bookingRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
+  }
+
+  public Booking findByIdWithLock(Long id) {
+    return bookingRepository.findByIdWithLock(id)
         .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
   }
 

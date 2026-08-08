@@ -7,6 +7,8 @@ import com.rsh.mtba.entity.Booking.BookingStatus;
 import com.rsh.mtba.entity.Payment;
 import com.rsh.mtba.entity.Payment.PaymentStatus;
 import com.rsh.mtba.entity.ShowSeat;
+import com.rsh.mtba.entity.User;
+import com.rsh.mtba.entity.User.Role;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.PaymentException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -34,10 +37,18 @@ public class PaymentService {
 
   @Transactional
   public PaymentResponse initiatePayment(Long userId, PaymentRequest request) {
-    Booking booking = bookingService.findById(request.getBookingId());
+    Booking booking = bookingService.findByIdWithLock(request.getBookingId());
 
     if (!booking.getUserId().equals(userId)) {
       throw new BookingException("You can only pay for your own bookings");
+    }
+    if (booking.getStatus() == BookingStatus.PAYMENT_INITIATED) {
+      Payment existing = paymentRepository.findByBookingId(booking.getId())
+          .orElseThrow(() -> new PaymentException("Payment state is inconsistent"));
+      if (request.getTransactionId() == null || request.getTransactionId().isBlank()
+          || existing.getTransactionId().equals(request.getTransactionId())) {
+        return PaymentResponse.from(existing);
+      }
     }
     if (booking.getStatus() != BookingStatus.PROCESSING) {
       throw new BookingException("Booking is not in PROCESSING state: " + booking.getStatus());
@@ -65,7 +76,7 @@ public class PaymentService {
 
   @Transactional
   public PaymentResponse confirmPayment(String transactionId) {
-    Payment payment = paymentRepository.findByTransactionId(transactionId)
+    Payment payment = paymentRepository.findByTransactionIdWithLock(transactionId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Payment not found for transactionId: " + transactionId));
 
@@ -88,9 +99,17 @@ public class PaymentService {
 
   @Transactional
   public PaymentResponse failPayment(String transactionId, String reason) {
-    Payment payment = paymentRepository.findByTransactionId(transactionId)
+    Payment payment = paymentRepository.findByTransactionIdWithLock(transactionId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Payment not found for transactionId: " + transactionId));
+
+    if (payment.getStatus() == PaymentStatus.FAILED) {
+      return PaymentResponse.from(payment);
+    }
+    if (payment.getStatus() == PaymentStatus.COMPLETED
+        || payment.getStatus() == PaymentStatus.REFUNDED) {
+      throw new PaymentException("Completed payment cannot be failed: " + transactionId);
+    }
 
     payment.setStatus(PaymentStatus.FAILED);
     payment.setFailureReason(reason);
@@ -111,16 +130,25 @@ public class PaymentService {
     return PaymentResponse.from(updated);
   }
 
-  public PaymentResponse getByBookingId(Long bookingId) {
+  public PaymentResponse getByBookingId(Long bookingId, User requestingUser) {
+    authorize(bookingService.findById(bookingId), requestingUser);
     return PaymentResponse.from(
         paymentRepository.findByBookingId(bookingId)
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Payment not found for bookingId: " + bookingId)));
   }
 
-  public PaymentResponse getById(Long id) {
-    return PaymentResponse.from(
-        paymentRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Payment", id)));
+  public PaymentResponse getById(Long id, User requestingUser) {
+    Payment payment = paymentRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+    authorize(bookingService.findById(payment.getBookingId()), requestingUser);
+    return PaymentResponse.from(payment);
+  }
+
+  private void authorize(Booking booking, User requestingUser) {
+    if (!booking.getUserId().equals(requestingUser.getId())
+        && requestingUser.getRole() != Role.ROLE_ADMIN) {
+      throw new AccessDeniedException("Payment belongs to another user");
+    }
   }
 }

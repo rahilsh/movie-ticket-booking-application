@@ -79,6 +79,11 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/shows/**")
                     .hasRole("ADMIN")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/payments/confirm/**",
+                        "/api/payments/fail/**")
+                    .hasRole("ADMIN")
                     // All other endpoints require authentication
                     .anyRequest()
                     .authenticated())

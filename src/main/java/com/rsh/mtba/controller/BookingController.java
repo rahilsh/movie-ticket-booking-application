@@ -34,8 +34,9 @@ public class BookingController {
 
   @GetMapping("/{id}")
   @Operation(summary = "Get booking by ID")
-  public ResponseEntity<BookingResponse> getById(@PathVariable Long id) {
-    return ResponseEntity.ok(bookingService.getById(id));
+  public ResponseEntity<BookingResponse> getById(
+      @PathVariable Long id, Authentication authentication) {
+    return ResponseEntity.ok(bookingService.getById(id, resolveUser(authentication)));
   }
 
   @GetMapping("/my")
@@ -54,10 +55,13 @@ public class BookingController {
   }
 
   private Long resolveUserId(Authentication authentication) {
+    return resolveUser(authentication).getId();
+  }
+
+  private User resolveUser(Authentication authentication) {
     String email = authentication.getName();
     return userRepository
         .findByEmail(email)
-        .map(User::getId)
         .orElseThrow(() -> new RuntimeException("Authenticated user not found: " + email));
   }
 }

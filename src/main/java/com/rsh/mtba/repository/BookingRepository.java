@@ -79,6 +79,15 @@ public class BookingRepository {
     return Optional.of(b);
   }
 
+  public Optional<Booking> findByIdWithLock(Long id) {
+    List<Booking> r = jdbc.query(
+        SELECT_WITH_SHOW + "WHERE b.id=? FOR UPDATE OF b", ROW_MAPPER, id);
+    if (r.isEmpty()) return Optional.empty();
+    Booking b = r.get(0);
+    b.setSeatLabels(findSeatLabels(id));
+    return Optional.of(b);
+  }
+
   public List<Booking> findByUserId(Long userId) {
     List<Booking> bookings = jdbc.query(
         SELECT_WITH_SHOW + "WHERE b.user_id=? ORDER BY b.created_at DESC", ROW_MAPPER, userId);

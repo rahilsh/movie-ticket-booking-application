@@ -60,7 +60,7 @@ class PaymentServiceTest {
     request.setBookingId(10L);
     request.setTransactionId("TXN-CUSTOM-123");
 
-    when(bookingService.findById(10L)).thenReturn(booking);
+    when(bookingService.findByIdWithLock(10L)).thenReturn(booking);
     Payment saved = Payment.builder().id(1L).transactionId("TXN-CUSTOM-123").bookingId(10L)
         .amountInPaise(25000).status(PaymentStatus.INITIATED).createdAt(LocalDateTime.now()).build();
     when(paymentRepository.save(any())).thenReturn(saved);
@@ -78,7 +78,7 @@ class PaymentServiceTest {
   void initiatePayment_wrongUser_throws() {
     PaymentRequest request = new PaymentRequest();
     request.setBookingId(10L);
-    when(bookingService.findById(10L)).thenReturn(booking);
+    when(bookingService.findByIdWithLock(10L)).thenReturn(booking);
 
     assertThatThrownBy(() -> paymentService.initiatePayment(99L, request))
         .isInstanceOf(BookingException.class)
@@ -91,7 +91,7 @@ class PaymentServiceTest {
     booking.setStatus(BookingStatus.COMPLETED);
     PaymentRequest request = new PaymentRequest();
     request.setBookingId(10L);
-    when(bookingService.findById(10L)).thenReturn(booking);
+    when(bookingService.findByIdWithLock(10L)).thenReturn(booking);
 
     assertThatThrownBy(() -> paymentService.initiatePayment(1L, request))
         .isInstanceOf(BookingException.class)
@@ -102,7 +102,7 @@ class PaymentServiceTest {
   @DisplayName("confirmPayment() marks payment COMPLETED and confirms booking")
   void confirmPayment_success() {
     booking.setStatus(BookingStatus.PAYMENT_INITIATED);
-    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
     when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     PaymentResponse response = paymentService.confirmPayment("TXN-1");
@@ -115,7 +115,7 @@ class PaymentServiceTest {
   @DisplayName("confirmPayment() throws PaymentException if payment already failed")
   void confirmPayment_alreadyFailed_throws() {
     payment.setStatus(PaymentStatus.FAILED);
-    when(paymentRepository.findByTransactionId("TXN-1")).thenReturn(Optional.of(payment));
+    when(paymentRepository.findByTransactionIdWithLock("TXN-1")).thenReturn(Optional.of(payment));
 
     assertThatThrownBy(() -> paymentService.confirmPayment("TXN-1"))
         .isInstanceOf(PaymentException.class)

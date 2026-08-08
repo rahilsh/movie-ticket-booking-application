@@ -5,10 +5,12 @@ import com.rsh.mtba.entity.Booking;
 import com.rsh.mtba.entity.Booking.BookingStatus;
 import com.rsh.mtba.entity.ShowSeat;
 import com.rsh.mtba.entity.ShowSeat.ShowSeatStatus;
+import com.rsh.mtba.entity.User;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.repository.BookingRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ class BookingServiceExtendedTest {
 
   private ShowSeat ss1;
   private Booking booking;
+  private User owner;
 
   @BeforeEach
   void setUp() {
@@ -46,6 +49,7 @@ class BookingServiceExtendedTest {
         .id(10L).userId(1L).showId(1L).movieName("Movie")
         .seatLabels(List.of("A1")).totalAmountInPaise(25000)
         .status(BookingStatus.PAYMENT_INITIATED).createdAt(LocalDateTime.now()).build();
+    owner = User.builder().id(1L).role(User.Role.ROLE_USER).build();
   }
 
   @Test
@@ -88,8 +92,28 @@ class BookingServiceExtendedTest {
   void getById_notFound() {
     when(bookingRepository.findById(999L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> bookingService.getById(999L))
+    assertThatThrownBy(() -> bookingService.getById(999L, owner))
         .isInstanceOf(ResourceNotFoundException.class);
+  }
+
+  @Test
+  @DisplayName("getById() allows the owner and administrators")
+  void getById_authorized() {
+    when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+
+    assertThat(bookingService.getById(10L, owner).getId()).isEqualTo(10L);
+    assertThat(bookingService.getById(
+        10L, User.builder().id(2L).role(User.Role.ROLE_ADMIN).build()).getId()).isEqualTo(10L);
+  }
+
+  @Test
+  @DisplayName("getById() denies unrelated users")
+  void getById_forbidden() {
+    when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+
+    assertThatThrownBy(() -> bookingService.getById(
+        10L, User.builder().id(2L).role(User.Role.ROLE_USER).build()))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
