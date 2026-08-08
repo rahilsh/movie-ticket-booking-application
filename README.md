@@ -141,6 +141,8 @@ The complete verification requires Docker. It starts PostgreSQL with Testcontain
 mvn clean verify
 ```
 
+The Maven build detects the default Colima socket on macOS. If Colima uses a custom profile or network configuration, export the Testcontainers variables documented by Colima before running the command.
+
 Reports are generated under `target/surefire-reports`, `target/failsafe-reports`, and `target/site/jacoco`.
 
 ## CI and Containers
