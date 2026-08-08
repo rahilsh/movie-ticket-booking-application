@@ -1,0 +1,26 @@
+.github/workflows/maven.yml
+  h_ae44bf4236b009 26,35-38
+pom.xml
+  h_ae44bf4236b009 173-184,194-196,201
+src/test/java/com/rsh/mtba/controller/FullApiIT.java
+  h_ae44bf4236b009 3,5-6,8-9,13,15,20-21,23-28,30,34-35,37,39,42,51-58,60,69-85,89-120,124-128,131,133-136,139-143
+src/test/java/com/rsh/mtba/functional/BookingFlowIT.java
+  h_ae44bf4236b009 32,71,527-561
+src/test/java/com/rsh/mtba/repository/PostgreSqlRepositoryIT.java
+  h_ae44bf4236b009 13,30
+src/test/java/com/rsh/mtba/support/PostgreSqlIntegrationTest.java
+  h_ae44bf4236b009 1-26
+src/test/resources/application-test.yml
+  h_ae44bf4236b009 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "f74e5e7f933fac6bd50da5439da6cefa92053f8a",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}

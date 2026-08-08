@@ -1,0 +1,16 @@
+README.md
+  h_ae44bf4236b009 144-145
+pom.xml
+  h_ae44bf4236b009 261-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "e83be8682e5dd4175bc8d5f1eb594c11465c7513",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}

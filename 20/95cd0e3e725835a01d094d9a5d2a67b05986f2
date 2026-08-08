@@ -1,0 +1,30 @@
+src/main/java/com/rsh/mtba/controller/AuthController.java
+  h_ae44bf4236b009 49
+src/main/java/com/rsh/mtba/security/JwtAuthFilter.java
+  h_ae44bf4236b009 14-16,28,43-45,47-53
+src/main/java/com/rsh/mtba/security/JwtUtil.java
+  h_ae44bf4236b009 28
+src/main/resources/application-dev.yml
+  h_ae44bf4236b009 17-20
+src/main/resources/application.yml
+  h_ae44bf4236b009 37
+src/test/java/com/rsh/mtba/controller/FullApiCoverageTest.java
+  h_ae44bf4236b009 105-106
+src/test/java/com/rsh/mtba/controller/TheatreControllerExtendedTest.java
+  h_ae44bf4236b009 57
+src/test/java/com/rsh/mtba/controller/TheatreControllerIntegrationTest.java
+  h_ae44bf4236b009 66-67
+src/test/java/com/rsh/mtba/security/JwtUtilTest.java
+  h_ae44bf4236b009 21,28,33-36,42,63,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "2095cd0e3e725835a01d094d9a5d2a67b05986f2",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}

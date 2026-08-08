@@ -1,0 +1,24 @@
+.dockerignore
+  h_ae44bf4236b009 9-16
+.gitignore
+  h_ae44bf4236b009 29-39
+docker-compose.yml
+  h_ae44bf4236b009 10
+pom.xml
+  h_ae44bf4236b009 74-77
+src/main/resources/application-dev.yml
+  h_ae44bf4236b009 3
+src/main/resources/application.yml
+  h_ae44bf4236b009 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "5df96d8b25f834dbfee4c5474e4f7e99116fe5e6",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}
