@@ -238,13 +238,6 @@
               <rules>
                 <rule>
                   <element>BUNDLE</element>
-                  <excludes>
-                    <!-- Exclude Lombok-generated, config, and entry-point classes -->
-                    <exclude>in/rsh/mtba/App.class</exclude>
-                    <exclude>in/rsh/mtba/config/**</exclude>
-                    <exclude>in/rsh/mtba/dto/**</exclude>
-                    <exclude>in/rsh/mtba/entity/**</exclude>
-                  </excludes>
                   <limits>
                     <limit>
                       <counter>INSTRUCTION</counter>

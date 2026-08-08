@@ -72,10 +72,11 @@ Start only PostgreSQL:
 
 ```bash
 docker compose up -d postgres
-JWT_SECRET="$(openssl rand -base64 48)" mvn spring-boot:run
+JWT_SECRET="$(openssl rand -base64 48)" \
+  mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-The default profile is `dev`. Production deployments must use `SPRING_PROFILES_ACTIVE=prod` and supply `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET`.
+No runtime profile is activated implicitly. Local Maven runs should select `dev`. Production deployments must use `SPRING_PROFILES_ACTIVE=prod` and supply `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET`.
 
 ## Admin Setup
 

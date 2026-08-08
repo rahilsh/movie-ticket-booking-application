@@ -2,9 +2,6 @@ spring:
   application:
     name: movie-ticket-booking-application
 
-  profiles:
-    default: dev
-
   flyway:
     enabled: true
     locations: classpath:db/migration

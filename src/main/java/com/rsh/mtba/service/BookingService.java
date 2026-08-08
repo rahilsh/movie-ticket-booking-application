@@ -119,9 +119,12 @@ public class BookingService {
 
     if (booking.getStatus() == BookingStatus.PAYMENT_INITIATED) {
       paymentRepository.findByBookingIdWithLock(bookingId).ifPresent(payment -> {
-        payment.setStatus(com.rsh.mtba.entity.Payment.PaymentStatus.FAILED);
-        payment.setFailureReason("Booking cancelled");
-        paymentRepository.save(payment);
+        if (payment.getStatus() == com.rsh.mtba.entity.Payment.PaymentStatus.INITIATED
+            || payment.getStatus() == com.rsh.mtba.entity.Payment.PaymentStatus.PENDING) {
+          payment.setStatus(com.rsh.mtba.entity.Payment.PaymentStatus.FAILED);
+          payment.setFailureReason("Booking cancelled");
+          paymentRepository.save(payment);
+        }
       });
     }
 

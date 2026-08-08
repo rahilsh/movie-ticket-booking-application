@@ -160,4 +160,18 @@ class BookingServiceExtendedTest {
     assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
     assertThat(payment.getFailureReason()).isEqualTo("Booking cancelled");
   }
+
+  @Test
+  @DisplayName("cancelBooking() does not rewrite a terminal payment")
+  void cancelBooking_preservesTerminalPayment() {
+    Payment payment = Payment.builder().id(20L).status(PaymentStatus.COMPLETED).build();
+    when(bookingRepository.findByIdWithLock(10L)).thenReturn(Optional.of(booking));
+    when(paymentRepository.findByBookingIdWithLock(10L)).thenReturn(Optional.of(payment));
+    when(bookingRepository.save(any())).thenReturn(booking);
+
+    bookingService.cancelBooking(10L, 1L);
+
+    assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+    verify(paymentRepository, never()).save(payment);
+  }
 }
