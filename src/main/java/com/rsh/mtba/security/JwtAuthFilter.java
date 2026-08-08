@@ -5,14 +5,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -24,6 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
+  private final UserDetailsService userDetailsService;
 
   @Override
   protected void doFilterInternal(
@@ -38,15 +40,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       String token = extractToken(request);
       if (token != null && jwtUtil.isValid(token)) {
         String email = jwtUtil.extractEmail(token);
-        String role = jwtUtil.extractRole(token);
+        try {
+          UserDetails user = userDetailsService.loadUserByUsername(email);
+          MDC.put("userEmail", email);
 
-        MDC.put("userEmail", email);
-
-        UsernamePasswordAuthenticationToken auth =
-            new UsernamePasswordAuthenticationToken(
-                email, null, List.of(new SimpleGrantedAuthority(role)));
-        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(auth);
+          UsernamePasswordAuthenticationToken auth =
+              new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+          auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+          SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (UsernameNotFoundException e) {
+          log.debug("JWT subject no longer exists: {}", email);
+        }
       }
       filterChain.doFilter(request, response);
     } finally {

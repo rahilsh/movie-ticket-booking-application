@@ -46,7 +46,7 @@ public class AuthController {
 
     String email = auth.getName();
     User user = userRepository.findByEmail(email).orElseThrow();
-    String token = jwtUtil.generateToken(email, user.getRole().name());
+    String token = jwtUtil.generateToken(email);
 
     return ResponseEntity.ok(
         AuthResponse.builder()

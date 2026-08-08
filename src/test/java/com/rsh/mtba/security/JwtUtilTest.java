@@ -18,28 +18,28 @@ class JwtUtilTest {
   @Test
   @DisplayName("generateToken() produces a non-blank token")
   void generateToken_notBlank() {
-    String token = jwtUtil.generateToken("alice@test.com", "ROLE_USER");
+    String token = jwtUtil.generateToken("alice@test.com");
     assertThat(token).isNotBlank();
   }
 
   @Test
   @DisplayName("extractEmail() returns the email embedded in the token")
   void extractEmail_success() {
-    String token = jwtUtil.generateToken("alice@test.com", "ROLE_USER");
+    String token = jwtUtil.generateToken("alice@test.com");
     assertThat(jwtUtil.extractEmail(token)).isEqualTo("alice@test.com");
   }
 
   @Test
-  @DisplayName("extractRole() returns the role embedded in the token")
-  void extractRole_success() {
-    String token = jwtUtil.generateToken("admin@test.com", "ROLE_ADMIN");
-    assertThat(jwtUtil.extractRole(token)).isEqualTo("ROLE_ADMIN");
+  @DisplayName("tokens do not contain authorization claims")
+  void generateToken_hasNoRoleClaim() {
+    String token = jwtUtil.generateToken("admin@test.com");
+    assertThat(token).doesNotContain("ROLE_ADMIN");
   }
 
   @Test
   @DisplayName("isValid() returns true for a freshly generated token")
   void isValid_validToken_returnsTrue() {
-    String token = jwtUtil.generateToken("user@test.com", "ROLE_USER");
+    String token = jwtUtil.generateToken("user@test.com");
     assertThat(jwtUtil.isValid(token)).isTrue();
   }
 
@@ -60,7 +60,7 @@ class JwtUtilTest {
   void isValid_wrongKey_returnsFalse() {
     JwtUtil otherUtil =
         new JwtUtil("completely-different-secret-key-that-is-also-long-enough!!", 3600000L);
-    String alienToken = otherUtil.generateToken("evil@test.com", "ROLE_USER");
+    String alienToken = otherUtil.generateToken("evil@test.com");
     assertThat(jwtUtil.isValid(alienToken)).isFalse();
   }
 
@@ -71,7 +71,7 @@ class JwtUtilTest {
         new JwtUtil(
             "test-secret-key-that-is-long-enough-for-hmac-sha256-testing", -1000L // already expired
             );
-    String token = expiredUtil.generateToken("user@test.com", "ROLE_USER");
+    String token = expiredUtil.generateToken("user@test.com");
     assertThat(jwtUtil.isValid(token)).isFalse();
   }
 }

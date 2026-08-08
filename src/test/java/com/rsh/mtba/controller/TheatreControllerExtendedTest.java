@@ -54,7 +54,7 @@ class TheatreControllerExtendedTest {
                 .role(User.Role.ROLE_ADMIN)
                 .build());
 
-    adminToken = jwtUtil.generateToken(admin.getEmail(), admin.getRole().name());
+    adminToken = jwtUtil.generateToken(admin.getEmail());
   }
 
   @AfterEach
