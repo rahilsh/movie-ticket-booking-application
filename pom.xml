@@ -17,6 +17,34 @@
   <version>1.0.0</version>
   <name>mtba</name>
   <description>Movie Ticket Booking Application</description>
+  <url>https://github.com/rahilsh/movie-ticket-booking-application</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/license/mit</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>rahilsh</id>
+      <name>rahilsh</name>
+      <url>https://github.com/rahilsh</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/rahilsh/movie-ticket-booking-application</url>
+    <connection>scm:git:https://github.com/rahilsh/movie-ticket-booking-application.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/rahilsh/movie-ticket-booking-application.git</developerConnection>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/rahilsh/movie-ticket-booking-application/issues</url>
+  </issueManagement>
 
   <properties>
     <java.version>21</java.version>
