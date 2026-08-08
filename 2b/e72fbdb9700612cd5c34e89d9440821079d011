@@ -1,0 +1,18 @@
+README.md
+  h_ae44bf4236b009 75-76,79
+src/main/java/com/rsh/mtba/service/BookingService.java
+  h_ae44bf4236b009 122-127
+src/test/java/com/rsh/mtba/service/BookingServiceExtendedTest.java
+  h_ae44bf4236b009 163-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "2be72fbdb9700612cd5c34e89d9440821079d011",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}
