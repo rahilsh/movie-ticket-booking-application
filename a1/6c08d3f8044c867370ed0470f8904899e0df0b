@@ -1,0 +1,28 @@
+.github/ISSUE_TEMPLATE/bug_report.yml
+  h_ae44bf4236b009 1-33
+.github/ISSUE_TEMPLATE/config.yml
+  h_ae44bf4236b009 1-5
+.github/ISSUE_TEMPLATE/feature_request.yml
+  h_ae44bf4236b009 1-19
+.github/PULL_REQUEST_TEMPLATE.md
+  h_ae44bf4236b009 1-10
+CODE_OF_CONDUCT.md
+  h_ae44bf4236b009 1-24
+CONTRIBUTING.md
+  h_ae44bf4236b009 1-36
+LICENSE
+  h_ae44bf4236b009 1-21
+SECURITY.md
+  h_ae44bf4236b009 9-10,13-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "a16c08d3f8044c867370ed0470f8904899e0df0b",
+  "prompts": {},
+  "humans": {
+    "h_ae44bf4236b009": {
+      "author": "Rahil Shaikh <rahilrshk@gmail.com>"
+    }
+  }
+}
