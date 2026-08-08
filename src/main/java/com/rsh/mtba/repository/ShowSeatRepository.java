@@ -23,7 +23,7 @@ public class ShowSeatRepository {
 
   // Join to seats so we can populate label/row/col/type in one query
   private static final String SELECT_WITH_SEAT =
-      "SELECT ss.id, ss.show_id, ss.seat_id, ss.status, ss.version, "
+      "SELECT ss.id, ss.show_id, ss.seat_id, ss.owner_booking_id, ss.status, ss.version, "
       + "se.label AS seat_label, se.row_number, se.col_number, se.type AS seat_type "
       + "FROM show_seats ss "
       + "JOIN seats se ON se.id = ss.seat_id ";
@@ -33,6 +33,8 @@ public class ShowSeatRepository {
     s.setId(rs.getLong("id"));
     s.setShowId(rs.getLong("show_id"));
     s.setSeatId(rs.getLong("seat_id"));
+    long ownerBookingId = rs.getLong("owner_booking_id");
+    if (!rs.wasNull()) s.setOwnerBookingId(ownerBookingId);
     s.setStatus(ShowSeatStatus.valueOf(rs.getString("status")));
     s.setVersion(rs.getLong("version"));
     s.setSeatLabel(rs.getString("seat_label"));
@@ -56,11 +58,14 @@ public class ShowSeatRepository {
     KeyHolder keys = new GeneratedKeyHolder();
     jdbc.update(con -> {
       PreparedStatement ps = con.prepareStatement(
-          "INSERT INTO show_seats (show_id, seat_id, status, version) VALUES (?,?,?,0)",
+          "INSERT INTO show_seats (show_id, seat_id, owner_booking_id, status, version) "
+          + "VALUES (?,?,?,?,0)",
           new String[]{"id"});
       ps.setLong(1, ss.getShowId());
       ps.setLong(2, ss.getSeatId());
-      ps.setString(3, ss.getStatus().name());
+      if (ss.getOwnerBookingId() == null) ps.setObject(3, null);
+      else ps.setLong(3, ss.getOwnerBookingId());
+      ps.setString(4, ss.getStatus().name());
       return ps;
     }, keys);
     ss.setId(keys.getKey().longValue());
@@ -73,8 +78,9 @@ public class ShowSeatRepository {
    */
   private void updateStatus(ShowSeat ss) {
     int updated = jdbc.update(
-        "UPDATE show_seats SET status=?, version=version+1 WHERE id=? AND version=?",
-        ss.getStatus().name(), ss.getId(), ss.getVersion());
+        "UPDATE show_seats SET status=?, owner_booking_id=?, version=version+1 "
+            + "WHERE id=? AND version=?",
+        ss.getStatus().name(), ss.getOwnerBookingId(), ss.getId(), ss.getVersion());
     if (updated == 0) {
       throw new org.springframework.dao.OptimisticLockingFailureException(
           "ShowSeat id=" + ss.getId() + " was modified by another transaction");
@@ -104,7 +110,8 @@ public class ShowSeatRepository {
   public List<ShowSeat> findByShowIdAndSeatLabelInWithLock(Long showId, List<String> labels) {
     if (labels == null || labels.isEmpty()) return Collections.emptyList();
     String placeholders = String.join(",", Collections.nCopies(labels.size(), "?"));
-    String sql = "SELECT ss.id, ss.show_id, ss.seat_id, ss.status, ss.version, "
+    String sql = "SELECT ss.id, ss.show_id, ss.seat_id, ss.owner_booking_id, "
+        + "ss.status, ss.version, "
         + "se.label AS seat_label, se.row_number, se.col_number, se.type AS seat_type "
         + "FROM show_seats ss "
         + "JOIN seats se ON se.id = ss.seat_id "
@@ -116,6 +123,26 @@ public class ShowSeatRepository {
     for (int i = 0; i < labels.size(); i++) params[i + 1] = labels.get(i);
 
     return jdbc.query(sql, ROW_MAPPER, params);
+  }
+
+  public int markOwnedSeatsBooked(Long bookingId) {
+    return jdbc.update(
+        "UPDATE show_seats SET status='BOOKED', version=version+1 "
+            + "WHERE owner_booking_id=? AND status='LOCKED'",
+        bookingId);
+  }
+
+  public int releaseOwnedSeats(Long bookingId) {
+    return jdbc.update(
+        "UPDATE show_seats SET status='AVAILABLE', owner_booking_id=NULL, version=version+1 "
+            + "WHERE owner_booking_id=? AND status='LOCKED'",
+        bookingId);
+  }
+
+  public int countByBookingId(Long bookingId) {
+    Integer count = jdbc.queryForObject(
+        "SELECT COUNT(*) FROM booking_show_seats WHERE booking_id=?", Integer.class, bookingId);
+    return count == null ? 0 : count;
   }
 
   public void deleteAll() {

@@ -36,6 +36,11 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  booking:
+    seat-hold-duration: ${SEAT_HOLD_DURATION:PT10M}
+    expiry-enabled: ${BOOKING_EXPIRY_ENABLED:true}
+    expiry-scan-delay-ms: ${BOOKING_EXPIRY_SCAN_DELAY_MS:30000}
+    expiry-batch-size: ${BOOKING_EXPIRY_BATCH_SIZE:100}
 
 logging:
   level:

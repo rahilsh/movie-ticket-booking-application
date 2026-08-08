@@ -31,6 +31,8 @@ public class BookingRepository {
     b.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
     Timestamp upd = rs.getTimestamp("updated_at");
     if (upd != null) b.setUpdatedAt(upd.toLocalDateTime());
+    Timestamp holdExpiresAt = rs.getTimestamp("hold_expires_at");
+    if (holdExpiresAt != null) b.setHoldExpiresAt(holdExpiresAt.toLocalDateTime());
     b.setMovieName(rs.getString("movie_name"));
     return b;
   };
@@ -50,14 +52,16 @@ public class BookingRepository {
     KeyHolder keys = new GeneratedKeyHolder();
     jdbc.update(con -> {
       PreparedStatement ps = con.prepareStatement(
-          "INSERT INTO bookings (user_id, show_id, total_amount_in_paise, status, created_at) "
-          + "VALUES (?,?,?,?,?)",
+          "INSERT INTO bookings (user_id, show_id, total_amount_in_paise, status, created_at, "
+          + "hold_expires_at) VALUES (?,?,?,?,?,?)",
           new String[]{"id"});
       ps.setLong(1, booking.getUserId());
       ps.setLong(2, booking.getShowId());
       ps.setInt(3, booking.getTotalAmountInPaise());
       ps.setString(4, booking.getStatus().name());
       ps.setTimestamp(5, Timestamp.valueOf(booking.getCreatedAt()));
+      ps.setTimestamp(6, booking.getHoldExpiresAt() == null
+          ? null : Timestamp.valueOf(booking.getHoldExpiresAt()));
       return ps;
     }, keys);
     booking.setId(keys.getKey().longValue());
@@ -91,6 +95,17 @@ public class BookingRepository {
   public List<Booking> findByUserId(Long userId) {
     List<Booking> bookings = jdbc.query(
         SELECT_WITH_SHOW + "WHERE b.user_id=? ORDER BY b.created_at DESC", ROW_MAPPER, userId);
+    bookings.forEach(b -> b.setSeatLabels(findSeatLabels(b.getId())));
+    return bookings;
+  }
+
+  public List<Booking> findExpiredWithLock(int batchSize) {
+    List<Booking> bookings = jdbc.query(
+        SELECT_WITH_SHOW
+            + "WHERE b.status IN ('PROCESSING','PAYMENT_INITIATED') "
+            + "AND b.hold_expires_at <= CURRENT_TIMESTAMP "
+            + "ORDER BY b.hold_expires_at, b.id LIMIT ? FOR UPDATE OF b SKIP LOCKED",
+        ROW_MAPPER, batchSize);
     bookings.forEach(b -> b.setSeatLabels(findSeatLabels(b.getId())));
     return bookings;
   }

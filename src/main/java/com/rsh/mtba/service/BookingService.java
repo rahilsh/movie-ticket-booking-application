@@ -13,14 +13,18 @@ import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.ResourceNotFoundException;
 import com.rsh.mtba.exception.SeatNotAvailableException;
 import com.rsh.mtba.repository.BookingRepository;
+import com.rsh.mtba.repository.PaymentRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
 import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 @Service
@@ -29,8 +33,12 @@ public class BookingService {
 
   private final BookingRepository bookingRepository;
   private final ShowSeatRepository showSeatRepository;
+  private final PaymentRepository paymentRepository;
   private final ShowService showService;
   private final UserService userService;
+
+  @Value("${app.booking.seat-hold-duration:PT10M}")
+  private Duration seatHoldDuration = Duration.ofMinutes(10);
 
   /**
    * Creates a booking and locks the requested seats with SELECT ... FOR UPDATE.
@@ -59,8 +67,12 @@ public class BookingService {
         .movieName(show.getMovieName())
         .totalAmountInPaise(totalAmount)
         .status(BookingStatus.PROCESSING)
+        .holdExpiresAt(LocalDateTime.now().plus(seatHoldDuration))
         .build();
     Booking saved = bookingRepository.save(booking);
+
+    showSeats.forEach(ss -> ss.setOwnerBookingId(saved.getId()));
+    showSeatRepository.saveAll(showSeats);
 
     // Persist the booking ↔ show_seat join records
     List<Long> showSeatIds = showSeats.stream().map(ShowSeat::getId).collect(Collectors.toList());
@@ -74,19 +86,18 @@ public class BookingService {
 
   @Transactional
   public BookingResponse confirmBooking(Long bookingId) {
-    Booking booking = findById(bookingId);
+    Booking booking = findByIdWithLock(bookingId);
     if (booking.getStatus() != BookingStatus.PAYMENT_INITIATED) {
       throw new BookingException("Booking is not in PAYMENT_INITIATED state: " + booking.getStatus());
     }
     booking.setStatus(BookingStatus.COMPLETED);
     bookingRepository.save(booking);
 
-    // Mark all booked seats as BOOKED
-    List<ShowSeat> seats = showSeatRepository.findByShowId(booking.getShowId()).stream()
-        .filter(ss -> booking.getSeatLabels().contains(ss.getSeatLabel()))
-        .collect(Collectors.toList());
-    seats.forEach(ss -> ss.setStatus(ShowSeatStatus.BOOKED));
-    showSeatRepository.saveAll(seats);
+    int expected = showSeatRepository.countByBookingId(bookingId);
+    int updated = showSeatRepository.markOwnedSeatsBooked(bookingId);
+    if (updated != expected) {
+      throw new BookingException("Booking no longer owns all requested seats");
+    }
 
     log.info("Confirmed booking id={}", bookingId);
     return BookingResponse.from(booking);
@@ -94,7 +105,7 @@ public class BookingService {
 
   @Transactional
   public BookingResponse cancelBooking(Long bookingId, Long requestingUserId) {
-    Booking booking = findById(bookingId);
+    Booking booking = findByIdWithLock(bookingId);
 
     if (!booking.getUserId().equals(requestingUserId)) {
       throw new BookingException("You can only cancel your own bookings");
@@ -106,15 +117,18 @@ public class BookingService {
       throw new BookingException("Booking is already cancelled");
     }
 
+    if (booking.getStatus() == BookingStatus.PAYMENT_INITIATED) {
+      paymentRepository.findByBookingIdWithLock(bookingId).ifPresent(payment -> {
+        payment.setStatus(com.rsh.mtba.entity.Payment.PaymentStatus.FAILED);
+        payment.setFailureReason("Booking cancelled");
+        paymentRepository.save(payment);
+      });
+    }
+
     booking.setStatus(BookingStatus.CANCELLED);
     bookingRepository.save(booking);
 
-    // Release seats back to AVAILABLE
-    List<ShowSeat> seats = showSeatRepository.findByShowId(booking.getShowId()).stream()
-        .filter(ss -> booking.getSeatLabels().contains(ss.getSeatLabel()))
-        .collect(Collectors.toList());
-    seats.forEach(ss -> ss.setStatus(ShowSeatStatus.AVAILABLE));
-    showSeatRepository.saveAll(seats);
+    showSeatRepository.releaseOwnedSeats(bookingId);
 
     log.info("Cancelled booking id={}", bookingId);
     return BookingResponse.from(booking);

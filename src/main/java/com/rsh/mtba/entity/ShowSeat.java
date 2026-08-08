@@ -16,6 +16,7 @@ public class ShowSeat {
   private Long id;
   private Long showId;
   private Long seatId;
+  private Long ownerBookingId;
   private String seatLabel;
   private int rowNumber;
   private int colNumber;

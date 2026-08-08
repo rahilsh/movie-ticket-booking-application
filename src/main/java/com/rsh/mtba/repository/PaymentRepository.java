@@ -88,6 +88,12 @@ public class PaymentRepository {
     return r.isEmpty() ? Optional.empty() : Optional.of(r.get(0));
   }
 
+  public Optional<Payment> findByBookingIdWithLock(Long bookingId) {
+    List<Payment> r = jdbc.query(
+        "SELECT * FROM payments WHERE booking_id=? FOR UPDATE", ROW_MAPPER, bookingId);
+    return r.isEmpty() ? Optional.empty() : Optional.of(r.get(0));
+  }
+
   public void deleteAll() {
     jdbc.update("DELETE FROM payments");
   }

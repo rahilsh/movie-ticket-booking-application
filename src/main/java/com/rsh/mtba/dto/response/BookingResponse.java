@@ -20,6 +20,7 @@ public class BookingResponse {
   private int totalAmountInPaise;
   private String status;
   private LocalDateTime createdAt;
+  private LocalDateTime holdExpiresAt;
   private List<String> seatLabels;
 
   public static BookingResponse from(Booking booking) {
@@ -31,6 +32,7 @@ public class BookingResponse {
         .totalAmountInPaise(booking.getTotalAmountInPaise())
         .status(booking.getStatus().name())
         .createdAt(booking.getCreatedAt())
+        .holdExpiresAt(booking.getHoldExpiresAt())
         .seatLabels(booking.getSeatLabels())
         .build();
   }

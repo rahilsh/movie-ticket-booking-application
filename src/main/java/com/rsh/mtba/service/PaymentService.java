@@ -6,7 +6,6 @@ import com.rsh.mtba.entity.Booking;
 import com.rsh.mtba.entity.Booking.BookingStatus;
 import com.rsh.mtba.entity.Payment;
 import com.rsh.mtba.entity.Payment.PaymentStatus;
-import com.rsh.mtba.entity.ShowSeat;
 import com.rsh.mtba.entity.User;
 import com.rsh.mtba.entity.User.Role;
 import com.rsh.mtba.exception.BookingException;
@@ -16,8 +15,6 @@ import com.rsh.mtba.repository.BookingRepository;
 import com.rsh.mtba.repository.PaymentRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -76,6 +73,10 @@ public class PaymentService {
 
   @Transactional
   public PaymentResponse confirmPayment(String transactionId) {
+    Payment existing = paymentRepository.findByTransactionId(transactionId)
+        .orElseThrow(() -> new ResourceNotFoundException(
+            "Payment not found for transactionId: " + transactionId));
+    bookingService.findByIdWithLock(existing.getBookingId());
     Payment payment = paymentRepository.findByTransactionIdWithLock(transactionId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Payment not found for transactionId: " + transactionId));
@@ -99,6 +100,10 @@ public class PaymentService {
 
   @Transactional
   public PaymentResponse failPayment(String transactionId, String reason) {
+    Payment existing = paymentRepository.findByTransactionId(transactionId)
+        .orElseThrow(() -> new ResourceNotFoundException(
+            "Payment not found for transactionId: " + transactionId));
+    Booking booking = bookingService.findByIdWithLock(existing.getBookingId());
     Payment payment = paymentRepository.findByTransactionIdWithLock(transactionId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Payment not found for transactionId: " + transactionId));
@@ -115,16 +120,10 @@ public class PaymentService {
     payment.setFailureReason(reason);
     Payment updated = paymentRepository.save(payment);
 
-    Booking booking = bookingService.findById(payment.getBookingId());
     booking.setStatus(BookingStatus.PAYMENT_FAILED);
     bookingRepository.save(booking);
 
-    // Release seats back to AVAILABLE
-    List<ShowSeat> seats = showSeatRepository.findByShowId(booking.getShowId()).stream()
-        .filter(ss -> booking.getSeatLabels().contains(ss.getSeatLabel()))
-        .collect(Collectors.toList());
-    seats.forEach(ss -> ss.setStatus(ShowSeat.ShowSeatStatus.AVAILABLE));
-    showSeatRepository.saveAll(seats);
+    showSeatRepository.releaseOwnedSeats(booking.getId());
 
     log.warn("Payment failed id={} transactionId={} reason={}", updated.getId(), transactionId, reason);
     return PaymentResponse.from(updated);

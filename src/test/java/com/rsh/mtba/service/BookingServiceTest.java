@@ -11,6 +11,7 @@ import com.rsh.mtba.entity.User;
 import com.rsh.mtba.exception.BookingException;
 import com.rsh.mtba.exception.SeatNotAvailableException;
 import com.rsh.mtba.repository.BookingRepository;
+import com.rsh.mtba.repository.PaymentRepository;
 import com.rsh.mtba.repository.ShowSeatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +35,7 @@ class BookingServiceTest {
 
   @Mock private BookingRepository bookingRepository;
   @Mock private ShowSeatRepository showSeatRepository;
+  @Mock private PaymentRepository paymentRepository;
   @Mock private ShowService showService;
   @Mock private UserService userService;
 
@@ -82,7 +84,7 @@ class BookingServiceTest {
     assertThat(response.getStatus()).isEqualTo("PROCESSING");
     assertThat(showSeat1.getStatus()).isEqualTo(ShowSeatStatus.LOCKED);
     assertThat(showSeat2.getStatus()).isEqualTo(ShowSeatStatus.LOCKED);
-    verify(showSeatRepository).saveAll(anyList());
+    verify(showSeatRepository, times(2)).saveAll(anyList());
     verify(bookingRepository).saveBookingSeats(eq(100L), anyList());
   }
 
@@ -112,15 +114,13 @@ class BookingServiceTest {
         .seatLabels(List.of("A1", "A2")).totalAmountInPaise(50000)
         .status(BookingStatus.PROCESSING).createdAt(LocalDateTime.now()).build();
 
-    when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+    when(bookingRepository.findByIdWithLock(100L)).thenReturn(Optional.of(booking));
     when(bookingRepository.save(any())).thenReturn(booking);
-    when(showSeatRepository.findByShowId(1L)).thenReturn(List.of(showSeat1, showSeat2));
 
     BookingResponse response = bookingService.cancelBooking(100L, 1L);
 
     assertThat(response.getStatus()).isEqualTo("CANCELLED");
-    assertThat(showSeat1.getStatus()).isEqualTo(ShowSeatStatus.AVAILABLE);
-    assertThat(showSeat2.getStatus()).isEqualTo(ShowSeatStatus.AVAILABLE);
+    verify(showSeatRepository).releaseOwnedSeats(100L);
   }
 
   @Test
@@ -129,7 +129,7 @@ class BookingServiceTest {
     Booking booking = Booking.builder()
         .id(100L).userId(1L).showId(1L).movieName("Movie").seatLabels(List.of())
         .totalAmountInPaise(50000).status(BookingStatus.COMPLETED).createdAt(LocalDateTime.now()).build();
-    when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+    when(bookingRepository.findByIdWithLock(100L)).thenReturn(Optional.of(booking));
 
     assertThatThrownBy(() -> bookingService.cancelBooking(100L, 1L))
         .isInstanceOf(BookingException.class)
@@ -142,7 +142,7 @@ class BookingServiceTest {
     Booking booking = Booking.builder()
         .id(100L).userId(99L).showId(1L).movieName("Movie").seatLabels(List.of())
         .totalAmountInPaise(50000).status(BookingStatus.PROCESSING).createdAt(LocalDateTime.now()).build();
-    when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+    when(bookingRepository.findByIdWithLock(100L)).thenReturn(Optional.of(booking));
 
     assertThatThrownBy(() -> bookingService.cancelBooking(100L, 1L))
         .isInstanceOf(BookingException.class)

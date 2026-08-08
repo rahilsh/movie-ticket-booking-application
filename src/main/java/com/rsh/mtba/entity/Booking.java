@@ -27,6 +27,7 @@ public class Booking {
   private LocalDateTime createdAt = LocalDateTime.now();
 
   private LocalDateTime updatedAt;
+  private LocalDateTime holdExpiresAt;
 
   // Populated by join query for response building
   private String movieName;
@@ -36,6 +37,7 @@ public class Booking {
     PROCESSING,
     PAYMENT_INITIATED,
     PAYMENT_FAILED,
+    EXPIRED,
     CANCELLED,
     COMPLETED
   }
