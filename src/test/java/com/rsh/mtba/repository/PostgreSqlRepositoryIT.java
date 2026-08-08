@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import com.rsh.mtba.support.PostgreSqlIntegrationTest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.*;
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Transactional
-class RepositoryTest {
+class PostgreSqlRepositoryIT extends PostgreSqlIntegrationTest {
 
   @Autowired private UserRepository userRepository;
   @Autowired private TheatreRepository theatreRepository;

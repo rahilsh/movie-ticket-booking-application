@@ -29,6 +29,7 @@ import com.rsh.mtba.repository.ShowSeatRepository;
 import com.rsh.mtba.repository.TheatreRepository;
 import com.rsh.mtba.repository.UserRepository;
 import com.rsh.mtba.util.TestDataCleaner;
+import com.rsh.mtba.support.PostgreSqlIntegrationTest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
@@ -67,7 +68,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class BookingFlowFunctionalTest {
+class BookingFlowIT extends PostgreSqlIntegrationTest {
 
     // Shared state across ordered tests within this class
     private String userToken;
@@ -521,6 +522,41 @@ class BookingFlowFunctionalTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).hasSize(1);
         assertThat(resp.getBody().get(0).getName()).isEqualTo("Screen 1");
+    }
+
+    @Test
+    @Order(27)
+    @DisplayName("27. Other users cannot read bookings, payments, or invoke callbacks")
+    void objectAuthorizationIsEnforcedOverHttp() {
+        RegisterRequest register = new RegisterRequest();
+        register.setName("Bob");
+        register.setEmail("bob@test.com");
+        register.setPassword("password123");
+        register.setGender(Gender.MALE);
+        assertThat(restTemplate.postForEntity(
+            "/api/auth/register", register, UserResponse.class).getStatusCode())
+            .isEqualTo(HttpStatus.CREATED);
+
+        LoginRequest login = new LoginRequest();
+        login.setEmail("bob@test.com");
+        login.setPassword("password123");
+        String otherToken = restTemplate.postForEntity(
+            "/api/auth/login", login, AuthResponse.class).getBody().getToken();
+        HttpHeaders otherHeaders = new HttpHeaders();
+        otherHeaders.setBearerAuth(otherToken);
+
+        assertThat(restTemplate.exchange(
+            "/api/bookings/" + bookingId, HttpMethod.GET,
+            new HttpEntity<>(otherHeaders), ApiError.class).getStatusCode())
+            .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(
+            "/api/payments/booking/" + bookingId, HttpMethod.GET,
+            new HttpEntity<>(otherHeaders), ApiError.class).getStatusCode())
+            .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(
+            "/api/payments/confirm/" + transactionId, HttpMethod.POST,
+            new HttpEntity<>(otherHeaders), ApiError.class).getStatusCode())
+            .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     // ─────────────────────────── Helpers ───────────────────────────────
