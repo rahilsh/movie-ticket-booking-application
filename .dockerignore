@@ -6,3 +6,11 @@ target
 *.md
 docker-compose.yml
 .DS_Store
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore

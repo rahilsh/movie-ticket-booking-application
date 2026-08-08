@@ -3,7 +3,7 @@ spring:
     name: movie-ticket-booking-application
 
   profiles:
-    active: dev
+    default: dev
 
   flyway:
     enabled: true
